@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(open:*)",
+      "Bash(ykman list:*)",
+      "Bash(ssh-keygen:*)",
+      "Bash(ykman fido access change-pin:*)",
+      "Bash(git config:*)",
+      "Bash(git -C /Users/eric/dsp/fractals config --local --list)",
+      "Bash(git -C /Users/eric/dsp/fractals remote -v)",
+      "Bash(ls:*)",
+      "Bash(ssh:*)",
+      "Bash(git -C /Users/eric/ThunderBay/VibeCode remote get-url:*)",
+      "Bash(git -C /Users/eric/dsp config --local -l)"
+    ]
+  }
+}
