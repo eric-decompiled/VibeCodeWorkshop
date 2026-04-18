@@ -75,7 +75,10 @@
       background: var(--bg);
       color: var(--fg);
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      font-size: 20px;
+      /* Scale root type with the viewport height so dense slides still fit on
+         shorter laptop screens (13" MBA ≈ 900px tall). Everything else uses
+         rem, so the whole page shrinks together. */
+      font-size: clamp(13px, 2.1vh, 20px);
       line-height: 1.55;
       overflow-x: hidden;
     }
@@ -88,7 +91,8 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      padding: 4rem 4.5rem;
+      /* Padding scales with viewport on smaller screens so content has more room. */
+      padding: clamp(1.75rem, 4.5vh, 4rem) clamp(2rem, 4.5vw, 4.5rem);
       position: relative;
       overflow: hidden;
     }
@@ -275,12 +279,16 @@
     }
 
     /* Give every slide a little top padding so content doesn't hit the scroll timeline */
-    section.slide { padding-top: 5rem; }
+    section.slide { padding-top: clamp(2.5rem, 6.5vh, 5rem); }
 
     /* Slide entrance animation — content fades + lifts up as the slide comes into view */
     section.slide > *:not(.slide-num) {
       opacity: 0;
       transform: translateY(28px);
+      /* Let flex children shrink below their intrinsic size so an oversized
+         SVG or list gets clipped by overflow: hidden instead of pushing siblings
+         off-screen. */
+      min-height: 0;
       transition: opacity 0.6s cubic-bezier(0.2, 0.8, 0.25, 1),
                   transform 0.6s cubic-bezier(0.2, 0.8, 0.25, 1);
     }
@@ -398,6 +406,364 @@
     pre .fn { color: var(--era5); }
     pre .cm { color: var(--muted); font-style: italic; }
     pre .st { color: #c3e88d; }
+
+    /* --- CRT SCREEN (puzzle) --- */
+    .crt-screen {
+      position: relative;
+      padding: 14px;
+      background: linear-gradient(145deg, #1a1a1a, #080808);
+      border-radius: 18px;
+      border: 2px solid #2a2a2a;
+      box-shadow:
+        inset 0 2px 4px rgba(255,255,255,0.05),
+        inset 0 -2px 4px rgba(0,0,0,0.6),
+        0 18px 38px rgba(0,0,0,0.55),
+        0 0 40px rgba(127, 255, 127, 0.18);
+    }
+    .crt-screen::before {
+      content: '';
+      position: absolute;
+      inset: 14px;
+      border-radius: 10px;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(127, 255, 127, 0.08) 0px,
+        rgba(127, 255, 127, 0.08) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+      mix-blend-mode: screen;
+      z-index: 2;
+    }
+    .crt-screen::after {
+      content: '';
+      position: absolute;
+      inset: 14px;
+      border-radius: 10px;
+      pointer-events: none;
+      box-shadow: inset 0 0 60px rgba(0,0,0,0.75);
+      z-index: 3;
+    }
+    .crt-screen svg {
+      border-radius: 10px;
+      position: relative;
+      z-index: 1;
+    }
+    :root[data-theme="solarized"] .crt-screen {
+      background: linear-gradient(145deg, #3a342a, #1f1c16);
+      border-color: #4a4238;
+    }
+
+    /* --- METRONOME (icebreaker slide) --- */
+    .metronome {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 1.2rem;
+      padding: 1rem 1.2rem;
+      background: #060c06;
+      border: 1px solid var(--border-strong);
+      border-radius: 10px;
+      box-shadow: 0 0 22px rgba(127, 255, 127, 0.12), inset 0 0 28px rgba(0,0,0,0.55);
+      max-width: 720px;
+      align-items: center;
+    }
+    .met-beat {
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 3.6rem;
+      font-weight: 700;
+      color: var(--accent);
+      width: 4.2rem;
+      text-align: center;
+      text-shadow: 0 0 12px rgba(127,255,127,0.55), 0 0 28px rgba(127,255,127,0.3);
+      line-height: 1;
+      transform: scale(1);
+      opacity: 1;
+      will-change: transform, opacity;
+    }
+    /* One full cycle of the pulse runs the length of one beat so the display
+       pops in on the downbeat and gently shrinks/fades as anticipation for the
+       next beat. duration is fed in from JS via --beat-duration. */
+    @keyframes metBeatPulse {
+      0%   { transform: scale(1.08); opacity: 1; }
+      18%  { transform: scale(1);    opacity: 1; }
+      100% { transform: scale(0.94); opacity: 0.7; }
+    }
+    .met-beat.pulse {
+      animation: metBeatPulse var(--beat-duration, 500ms) ease-out both;
+    }
+    .met-controls { display: flex; flex-direction: column; gap: 0.6rem; }
+    .met-row { display: flex; align-items: center; gap: 0.8rem; }
+    .met-label {
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 0.78rem;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+      min-width: 5.6rem;
+    }
+    .met-label span { color: var(--accent); font-weight: 700; margin-left: 0.3rem; }
+    .met-slider {
+      flex: 1;
+      -webkit-appearance: none; appearance: none;
+      height: 4px;
+      background: var(--border-strong);
+      border-radius: 2px;
+      outline: none;
+    }
+    .met-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 10px rgba(127,255,127,0.6);
+      cursor: pointer;
+    }
+    .met-slider::-moz-range-thumb {
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--accent);
+      border: 0;
+      box-shadow: 0 0 10px rgba(127,255,127,0.6);
+      cursor: pointer;
+    }
+    .met-round-btns { display: flex; gap: 0.35rem; }
+    .met-btn {
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      padding: 0.35rem 0.7rem;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border-strong);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: color 0.12s ease, background 0.12s ease, box-shadow 0.15s ease;
+    }
+    .met-btn:hover { color: var(--accent); box-shadow: 0 0 10px rgba(127,255,127,0.25); }
+    .met-round-btn.active { color: #041004; background: var(--accent); border-color: var(--accent); }
+    .met-mode-btn.active { color: #041004; background: var(--accent); border-color: var(--accent); }
+    .met-btn.locked {
+      opacity: 0.45;
+      pointer-events: none;
+      cursor: not-allowed;
+    }
+    .met-slider.locked {
+      opacity: 0.45;
+      pointer-events: none;
+    }
+    .met-play {
+      margin-top: 0.1rem;
+      padding: 0.45rem 0.9rem;
+      background: var(--accent);
+      color: #041004;
+      border-color: var(--accent);
+      align-self: flex-start;
+    }
+    .met-play.playing { background: #ff8a8a; border-color: #ff8a8a; color: #2a0000; }
+    .met-play:hover { box-shadow: 0 0 14px rgba(127,255,127,0.5); }
+
+    /* Big variant for its own slide */
+    .metronome.metronome-big {
+      grid-template-columns: 1fr;
+      /* Just big enough to hug the ring + controls, with a little breathing room. */
+      width: fit-content;
+      max-width: min(540px, 92vw);
+      margin: 1.5rem auto 0;
+      padding: 1.6rem 1.8rem;
+      gap: 1.2rem;
+      justify-items: center;
+      align-items: center;
+    }
+    .metronome.metronome-big .met-beat {
+      font-size: clamp(5rem, 22vh, 14rem);
+      width: 100%;
+      max-width: 100%;
+      line-height: 1.05;
+      white-space: nowrap;
+      overflow: hidden;
+      text-shadow: 0 0 26px rgba(127,255,127,0.65), 0 0 60px rgba(127,255,127,0.4);
+    }
+    .metronome.metronome-big .met-beat.word {
+      font-size: clamp(2.5rem, 10vh, 6rem);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+    }
+    .metronome.metronome-big .met-controls {
+      width: 100%;
+      max-width: 460px;
+      gap: 0.8rem;
+    }
+    .metronome.metronome-big .met-label { font-size: 0.95rem; min-width: 7rem; }
+    .metronome.metronome-big .met-label span { font-size: 1.4rem; }
+    .metronome.metronome-big .met-btn { font-size: 1rem; padding: 0.55rem 1.1rem; }
+    .metronome.metronome-big .met-play { font-size: 1.2rem; padding: 0.7rem 1.6rem; align-self: center; }
+
+    /* Ring progress around the beat */
+    .met-ring-wrap {
+      position: relative;
+      /* Shrinks on short viewports so the ring + controls + paragraph all fit. */
+      width: min(420px, 55vh, 90vw);
+      height: min(420px, 55vh, 90vw);
+      max-width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .met-ring {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+    .met-ring .ring-track {
+      fill: none;
+      stroke: rgba(127, 255, 127, 0.1);
+      stroke-width: 14;
+    }
+    /* Progress arc — grows from 0 (top) around the circle as the sequence advances. */
+    .met-ring .ring-progress {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 14;
+      stroke-linecap: butt;
+      stroke-dasharray: 0 1131;   /* filled dynamically via stroke-dasharray */
+      transform-origin: center;
+      filter: drop-shadow(0 0 10px rgba(127,255,127,0.55));
+      transition: stroke-dasharray 0.1s linear;
+    }
+    /* Round-boundary ticks at 0°, 90°, 180°, 270° */
+    .met-ring .ring-ticks line {
+      stroke: rgba(127, 255, 127, 0.6);
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+    /* 12 beat pips — tiny circles around the ring */
+    .met-ring .ring-pips circle {
+      fill: rgba(127, 255, 127, 0.3);
+      r: 3;
+      transition: fill 0.15s ease, r 0.15s ease;
+    }
+    .met-ring .ring-pips circle.played { fill: var(--accent); }
+    .met-ring .ring-pips circle.current { fill: #ffd78a; }
+    /* The beat marker dot travels around the track */
+    .met-ring .ring-beat {
+      fill: #ffd78a;
+      opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(255,215,138,0.9));
+      transition: opacity 0.15s ease, cx 0.08s linear, cy 0.08s linear;
+    }
+    .met-ring .ring-beat.on { opacity: 1; }
+    .met-round-label {
+      position: absolute;
+      bottom: 18%;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 0.9rem;
+      letter-spacing: 4px;
+      color: var(--muted);
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+    .met-round-label .cur {
+      color: var(--accent);
+      font-weight: 700;
+      text-shadow: 0 0 10px rgba(127,255,127,0.45);
+    }
+    .metronome.metronome-big .met-beat {
+      position: relative;
+      z-index: 2;
+    }
+
+    /* --- PUZZLE TIMER --- */
+    .puzzle-timer {
+      display: inline-flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.6rem 0.9rem;
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      background: #060c06;
+      box-shadow: 0 0 18px rgba(127, 255, 127, 0.12), inset 0 0 20px rgba(0,0,0,0.6);
+    }
+    .pt-display {
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px rgba(127, 255, 127, 0.6), 0 0 22px rgba(127, 255, 127, 0.35);
+      min-width: 5ch;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+    .pt-display.warn { color: #ffd78a; text-shadow: 0 0 10px rgba(255,215,138,0.6), 0 0 22px rgba(255,215,138,0.35); }
+    .pt-display.done {
+      color: #ff8a8a;
+      text-shadow: 0 0 10px rgba(255,138,138,0.7), 0 0 22px rgba(255,138,138,0.4);
+      animation: ptBlink 0.6s steps(2, end) infinite;
+    }
+    @keyframes ptBlink { 50% { opacity: 0.25; } }
+    .pt-controls { display: flex; flex-direction: column; gap: 0.4rem; }
+    .pt-btn {
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      padding: 0.45rem 0.9rem;
+      background: var(--accent);
+      color: #041004;
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+    .pt-btn:hover { box-shadow: 0 0 14px rgba(127,255,127,0.5); transform: translateY(-1px); }
+    .pt-btn:active { transform: translateY(0); }
+    .pt-btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border-color: var(--border-strong);
+    }
+    .pt-btn-ghost:hover { color: var(--accent); box-shadow: 0 0 10px rgba(127,255,127,0.25); }
+
+    /* --- PUZZLE INTERACTIVE COUNTERS --- */
+    .puzzle-counters {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.8rem 1.2rem;
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 0.85rem;
+      letter-spacing: 2px;
+      color: var(--muted);
+    }
+    .pc-stat { display: inline-flex; align-items: baseline; gap: 0.45rem; }
+    .pc-num {
+      color: var(--accent);
+      font-size: 1.3rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      min-width: 1.2ch;
+      display: inline-block;
+      text-align: right;
+      text-shadow: 0 0 8px rgba(127,255,127,0.5);
+    }
+    .pc-num.over { color: #ff8a8a; text-shadow: 0 0 8px rgba(255,138,138,0.55); }
+    .puzzle-message {
+      margin-top: 0.8rem;
+      min-height: 1.6em;
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 0.95rem;
+      letter-spacing: 1px;
+    }
+    .puzzle-message.win  { color: var(--accent); text-shadow: 0 0 10px rgba(127,255,127,0.5); }
+    .puzzle-message.fail { color: #ff8a8a; }
+
+    .puzzle-dot { transition: fill 0.2s ease, r 0.2s ease; }
+    .puzzle-dot.hit { fill: #ffd78a; }
 
     /* --- DEMO CARDS --- */
     .demos {
@@ -594,9 +960,9 @@
     .anatomy .box p { font-size: 0.9rem; color: var(--muted); }
     .anatomy .arrow { text-align: center; color: var(--muted); font-size: 1.4rem; align-self: center; }
 
-    .pipeline-svg { width: 100%; height: auto; display: block; max-width: 1100px; margin-top: 1.5rem; }
-    .harness-svg { width: 100%; height: auto; display: block; max-width: 1000px; margin-top: 1rem; }
-    .vibes-svg { width: 100%; height: auto; display: block; max-width: 1100px; margin-top: 1.5rem; }
+    .pipeline-svg { width: 100%; height: auto; display: block; max-width: 1100px; max-height: 55vh; margin-top: 1.5rem; }
+    .harness-svg { width: 100%; height: auto; display: block; max-width: 1000px; max-height: 55vh; margin-top: 1rem; }
+    .vibes-svg { width: 100%; height: auto; display: block; max-width: 1100px; max-height: 55vh; margin-top: 1.5rem; }
 
     /* Photo slide — image-as-centerpiece */
     .photo-figure {
@@ -768,7 +1134,7 @@
       font-size: 0.85rem;
       margin: 0.5rem 0 0.8rem;
     }
-    .attn-svg { width: 100%; height: auto; display: block; }
+    .attn-svg { width: 100%; height: auto; display: block; max-height: 55vh; }
     .attn-svg .tok rect { fill: var(--panel-bg); stroke: var(--border); stroke-width: 1; }
     .attn-svg .tok text { fill: var(--fg); }
     .attn-svg .tok-focus rect { fill: var(--panel-bg-2); stroke: var(--era3); stroke-width: 2; }
@@ -800,7 +1166,7 @@
   <!-- 1. TITLE -->
   <section class="slide title-slide" id="s1" data-year="1956">
     <h1>How AI got<br/>so smart,<br/>so fast.</h1>
-    <h2>A seventy-year story in 20 slides.</h2>
+    <h2>Overnight success in 70 years.</h2>
     <div class="title-meta">
       Scroll or press <span class="kbd">↓</span> to start
     </div>
@@ -816,8 +1182,8 @@
       <li><a class="map-link" href="#s4"><span class="y">1966</span><span><strong>ELIZA.</strong> The first chatbot — and people fall for it.</span></a></li>
       <li><a class="map-link" href="#s-winter-1"><span class="y">1974</span><span><strong>The first AI winter.</strong> Money pours in. Money runs away.</span></a></li>
       <li><a class="map-link" href="#s-winter-2"><span class="y">1987</span><span><strong>The second AI winter.</strong> Bigger boom. Bigger crash.</span></a></li>
-      <li><a class="map-link" href="#s-gpu"><span class="y">2012</span><span><strong>GPUs save AI.</strong> Turns out gaming chips are perfect for it.</span></a></li>
       <li><a class="map-link" href="#s-condor"><span class="y">2010</span><span><strong>PlayStation supercomputer.</strong> The Air Force wires up 1,760 game consoles.</span></a></li>
+      <li><a class="map-link" href="#s-gpu"><span class="y">2012</span><span><strong>AlexNet.</strong> Toronto grad students prove gaming GPUs + neural nets = modern AI.</span></a></li>
       <li><a class="map-link" href="#s6"><span class="y">2017</span><span><strong>The Transformer.</strong> One paper changes everything. (Almost nobody notices at first.)</span></a></li>
       <li><a class="map-link" href="#s9"><span class="y">2020</span><span><strong>Scaling up.</strong> Make it bigger. Make it smarter. Repeat.</span></a></li>
       <li><a class="map-link" href="#s10"><span class="y">2022</span><span><strong>ChatGPT.</strong> 100 million people sign up in two months.</span></a></li>
@@ -828,10 +1194,99 @@
     <span class="slide-num">02</span>
   </section>
 
+  <!-- 3. ICEBREAKER -->
+  <section class="slide" id="s-icebreaker" data-year="1956">
+    <span class="eyebrow">Icebreaker</span>
+    <h2>Snap · Clap · Stomp</h2>
+
+    <div style="max-width: 75ch; margin-top: 1.8rem;">
+      <h3>The rounds</h3>
+      <ol style="margin-top: 0.6rem; padding-left: 1.3rem;">
+        <li>Say all three numbers out loud: <em>"1, 2, 3, 1, 2, 3…"</em></li>
+        <li>Replace <strong>1</strong> with a snap. Still say 2 and 3.</li>
+        <li>Replace <strong>2</strong> with a clap. Still say 3.</li>
+        <li>Replace <strong>3</strong> with a stomp. No more words — just <em>snap, clap, stomp</em> forever.</li>
+      </ol>
+    </div>
+
+    <p style="position: absolute; bottom: 1.2rem; left: 2rem; font-size: 0.75rem; color: var(--muted); margin: 0;">
+      Source: <a href="https://bbbpress.com/2017/12/drama-game-clap-snap-stomp/" target="_blank" rel="noopener" style="color: var(--muted); text-decoration: underline;">bbbpress.com — "Clap, Snap, Stomp"</a>
+    </p>
+    <span class="slide-num">03</span>
+  </section>
+
+  <!-- 4. METRONOME for Snap·Clap·Stomp -->
+  <section class="slide" id="s-icebreaker-metronome" data-year="1956">
+    <span class="eyebrow">Snap · Clap · Stomp · Metronome</span>
+    <h2>Let the computer keep the beat</h2>
+
+    <div class="metronome metronome-big" id="scsMetro">
+      <div class="met-ring-wrap">
+        <svg class="met-ring" viewBox="-200 -200 400 400">
+          <!-- background track -->
+          <circle r="180" class="ring-track"/>
+          <!-- progress arc sweeps from the top around as the 12-beat sequence plays -->
+          <circle r="180" class="ring-progress" id="scsRingProgress" transform="rotate(-90)"/>
+          <!-- round-boundary ticks at every quarter (0°, 90°, 180°, 270°) -->
+          <g class="ring-ticks" id="scsRingTicks"></g>
+          <!-- 12 beat pips -->
+          <g class="ring-pips" id="scsRingPips"></g>
+          <!-- beat marker dot — positioned directly via cx/cy in JS -->
+          <circle cx="0" cy="-180" r="9" class="ring-beat" id="scsRingBeat"/>
+        </svg>
+        <div class="met-beat" id="scsBeat">—</div>
+      </div>
+      <div class="met-controls">
+        <div class="met-row">
+          <label class="met-label">Mode</label>
+          <div class="met-round-btns" id="scsModeBtns">
+            <button type="button" data-mode="train" class="met-btn met-mode-btn active">TRAIN</button>
+            <button type="button" data-mode="challenge" class="met-btn met-mode-btn">CHALLENGE</button>
+          </div>
+        </div>
+        <div class="met-row">
+          <label class="met-label">BPM <span id="scsBpmVal">60</span></label>
+          <input type="range" id="scsBpm" min="40" max="800" step="5" value="60" class="met-slider"/>
+        </div>
+        <button type="button" class="met-btn met-play" id="scsPlay">PLAY</button>
+      </div>
+    </div>
+
+    <span class="slide-num">04</span>
+  </section>
+
+  <!-- 5. BREATHER · Computers are good at rule-following -->
+  <section class="slide" id="s-breather-rules" data-year="1956">
+    <span class="eyebrow">Take a breath</span>
+    <h2>Computers do things we can't</h2>
+    <p class="subtitle">Not because they're smarter than us. Because they don't have to decide.</p>
+
+    <div class="cols-2" style="margin-top: 2rem;">
+      <div>
+        <h3>A car can go 200 kmh</h3>
+        <p style="margin-top: 0.6rem;">Nobody says the car is a great athlete. You turn the key, press the pedal, the engine does the rest. It's just a machine doing the thing machines are good at.</p>
+      </div>
+      <div>
+        <h3>A computer can snap · clap · stomp at 800 BPM</h3>
+        <p style="margin-top: 0.6rem;">The metronome you just raced doesn't think, doesn't get tired, doesn't second-guess. It's following a recipe — one beat at a time, forever, in exactly the right order.</p>
+      </div>
+    </div>
+
+    <div class="callout teal" style="margin-top: 1.5rem;">
+      <strong>When every step is written down ahead of time, a computer will beat us every time.</strong> That's what computers have always been good at: mechanical, rule-based work. No decisions required.
+    </div>
+
+    <p style="margin-top: 1rem; max-width: 80ch; color: var(--muted); font-size: 1.05rem;">
+      But what happens when the steps <em>aren't</em> written down? When someone asks a fuzzy question, or the situation keeps changing?
+    </p>
+
+    <span class="slide-num">05</span>
+  </section>
+
   <!-- ELIZA transcript -->
   <section class="slide" id="s4" data-year="1966">
     <h2>Meet ELIZA — the world's first chatbot</h2>
-    <p class="subtitle">Type something and she'll talk back. Try saying you're sad, or talking about your family.</p>
+    <p class="subtitle">Type something and she'll talk back. ELIZA turns 60 in 2026 🎉</p>
     <div class="transcript" id="eliza-box" style="margin-top: 1.5rem;">
       <div class="log" id="eliza-log"></div>
       <div class="prompt-row">
@@ -840,9 +1295,9 @@
       </div>
     </div>
     <p class="eliza-hint">
-      Built in 1966 at MIT. The whole program is just a few hundred lines of code. <a href="https://sites.google.com/view/elizagen-org/" target="_blank" rel="noopener" style="color: var(--accent);">See the original →</a>
+      Built in 1966 at MIT. The whole program is just a few hundred lines of code. <a href="https://sites.google.com/view/elizagen-org/original-eliza" target="_blank" rel="noopener" style="color: var(--accent);">See the original →</a>
     </p>
-    <span class="slide-num">03</span>
+    <span class="slide-num">06</span>
   </section>
 
   <!-- 5. THE ELIZA EFFECT -->
@@ -864,7 +1319,7 @@
     <p class="eliza-hint" style="margin-top: 1rem;">
       → <a href="https://en.wikipedia.org/wiki/ELIZA_effect" target="_blank" rel="noopener" style="color: var(--accent);">en.wikipedia.org/wiki/ELIZA_effect</a>
     </p>
-    <span class="slide-num">04</span>
+    <span class="slide-num">07</span>
   </section>
 
   <!-- 6. WINTER 1 -->
@@ -895,7 +1350,7 @@
     <div class="callout teal" style="margin-top: 1.5rem;">
       The promise was: <em>fast computers + clever rules = a thinking machine</em>. Computers got faster. Thinking didn't show up. Money disappeared.
     </div>
-    <span class="slide-num">05</span>
+    <span class="slide-num">08</span>
   </section>
 
   <!-- 7. WINTER 2 -->
@@ -928,7 +1383,7 @@
     <div class="callout teal" style="margin-top: 1.5rem;">
       <strong>Same story, twice in a row:</strong> people get excited → money rushes in → AI doesn't work as well as promised → money runs away.
     </div>
-    <span class="slide-num">06</span>
+    <span class="slide-num">09</span>
   </section>
 
   <!-- 8. AI VIBES GRAPH -->
@@ -1026,41 +1481,203 @@
     <p style="margin-top: 1rem; max-width: 90ch;">
       Two winters happened. Now we're in the biggest boom yet — and this time, the AI <em>actually works</em>. So: are we about to crash again? Or is this one different? What do you think? 🤔
     </p>
-    <span class="slide-num">07</span>
+    <span class="slide-num">10</span>
   </section>
 
-  <!-- THE GPU THAW -->
-  <section class="slide" id="s-gpu" data-year="2012">
-    <h2>How video games saved AI</h2>
-    <p class="subtitle">A happy accident in the chip industry.</p>
+  <!-- 9. PUZZLE: NINE DOTS -->
+  <section class="slide" id="s-puzzle" data-year="2000">
+    <span class="eyebrow">Puzzle</span>
+    <h2>Connect all 9 dots with 4 straight lines</h2>
+    <p class="subtitle">Don't lift your pen. Don't retrace a line. Can you do it in four?</p>
 
-    <p style="max-width: 80ch; margin-top: 2rem;">Video games need to draw <strong>millions of pixels at the same time</strong>. To do that, gaming chips (called <strong>GPUs</strong>) are built to do <strong>tons of small math problems all at once</strong>.</p>
-    <p style="max-width: 80ch; margin-top: 0.9rem;">Turns out — training an AI is <em>the exact same kind of math</em>. Once scientists realized this around <strong>2007–2012</strong>, they started using gaming GPUs for AI. Suddenly things that took a year to train took a week.</p>
+    <div style="display: grid; grid-template-columns: auto 1fr; gap: 2.5rem; align-items: center; margin-top: 1.5rem;">
+      <div class="crt-screen" style="width: min(380px, 55vh); max-width: 100%;">
+        <svg id="puzzleSvg" viewBox="0 0 500 500" style="display: block; width: 100%; height: auto; cursor: crosshair;">
+          <defs>
+            <filter id="crtGlow1" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3.5" result="blur"/>
+              <feMerge>
+                <feMergeNode in="blur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+            <radialGradient id="crtVignette1" cx="50%" cy="50%" r="70%">
+              <stop offset="60%" stop-color="#050a05" stop-opacity="0"/>
+              <stop offset="100%" stop-color="#000" stop-opacity="0.8"/>
+            </radialGradient>
+          </defs>
+          <!-- background click target -->
+          <rect id="puzzleBg" x="0" y="0" width="500" height="500" fill="#060c06"/>
+          <!-- on-screen counters, drawn inside the CRT -->
+          <g pointer-events="none" font-family="'SF Mono', Menlo, monospace" font-size="20" fill="#7fff7f" filter="url(#crtGlow1)">
+            <text x="30" y="40">Lines <tspan id="puzzleLineCount" font-weight="700">0</tspan> / 4</text>
+            <text x="270" y="40">Dots <tspan id="puzzleDotCount" font-weight="700">0</tspan> / 9</text>
+          </g>
+          <!-- user-drawn lines -->
+          <g id="puzzleUserLines" filter="url(#crtGlow1)"></g>
+          <!-- live preview line while hovering -->
+          <line id="puzzlePreview" x1="0" y1="0" x2="0" y2="0"
+                stroke="#7fff7f" stroke-width="2" stroke-dasharray="4 4"
+                opacity="0" pointer-events="none" filter="url(#crtGlow1)"/>
+          <!-- dots -->
+          <g id="puzzleDots" filter="url(#crtGlow1)">
+            <circle class="puzzle-dot" data-i="0" cx="150" cy="150" r="12" fill="#7fff7f"/>
+            <circle class="puzzle-dot" data-i="1" cx="250" cy="150" r="12" fill="#7fff7f"/>
+            <circle class="puzzle-dot" data-i="2" cx="350" cy="150" r="12" fill="#7fff7f"/>
+            <circle class="puzzle-dot" data-i="3" cx="150" cy="250" r="12" fill="#7fff7f"/>
+            <circle class="puzzle-dot" data-i="4" cx="250" cy="250" r="12" fill="#7fff7f"/>
+            <circle class="puzzle-dot" data-i="5" cx="350" cy="250" r="12" fill="#7fff7f"/>
+            <circle class="puzzle-dot" data-i="6" cx="150" cy="350" r="12" fill="#7fff7f"/>
+            <circle class="puzzle-dot" data-i="7" cx="250" cy="350" r="12" fill="#7fff7f"/>
+            <circle class="puzzle-dot" data-i="8" cx="350" cy="350" r="12" fill="#7fff7f"/>
+          </g>
+          <!-- current pen position marker -->
+          <circle id="puzzleAnchor" cx="0" cy="0" r="8" fill="none"
+                  stroke="#ffd78a" stroke-width="2.5" opacity="0"
+                  pointer-events="none" filter="url(#crtGlow1)"/>
+          <rect x="0" y="0" width="500" height="500" fill="url(#crtVignette1)" pointer-events="none"/>
+        </svg>
+      </div>
 
-    <div class="callout teal" style="margin-top: 2rem;">
-      Almost overnight, every AI lab bought stacks of GPUs. The field went from "AI is dead" to "why didn't we do this sooner?" in about a year and a half.
+      <div>
+        <h3 style="color: var(--accent); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 2px;">Rules</h3>
+        <ul style="margin-top: 0.8rem; font-size: 1.1rem; line-height: 1.8;">
+          <li>Four straight lines <strong>only</strong>.</li>
+          <li>One continuous path — each new line starts where the last one ended.</li>
+          <li>No lifting your pen. No retracing a line.</li>
+          <li>Every dot must be on a line.</li>
+        </ul>
+        <p style="margin-top: 1.2rem; color: var(--muted); font-size: 1rem;">Grab a partner and a sheet of paper.</p>
+
+        <div class="puzzle-timer" id="puzzleTimer" data-seconds="120" style="margin-top: 1rem;">
+          <div class="pt-display" id="puzzleTimerDisplay">2:00</div>
+          <div class="pt-controls">
+            <button type="button" class="pt-btn" id="puzzleTimerStart">START</button>
+            <button type="button" class="pt-btn pt-btn-ghost" id="puzzleTimerReset">RESET</button>
+          </div>
+        </div>
+
+        <div id="puzzleMessage" class="puzzle-message" style="margin-top: 1rem;"></div>
+      </div>
     </div>
 
-    <p style="margin-top: 1.2rem; color: var(--muted); max-width: 80ch; font-size: 1.1rem;">
-      Today, <strong>NVIDIA</strong> — the company that used to make graphics cards for kids playing Counter-Strike — is one of the most valuable companies on the planet. All because of AI.
+    <p style="position: absolute; bottom: 1.2rem; left: 2rem; font-size: 0.75rem; color: var(--muted); margin: 0;">
+      Classic puzzle — popularized by Sam Loyd's <a href="https://en.wikipedia.org/wiki/Nine_dots_puzzle" target="_blank" rel="noopener" style="color: var(--muted); text-decoration: underline;">"Nine Dots Puzzle" (c. 1914)</a>.
     </p>
-    <span class="slide-num">08</span>
+    <span class="slide-num">11</span>
   </section>
 
-  <!-- THE CONDOR CLUSTER -->
+  <!-- 10. PUZZLE SOLUTION -->
+  <section class="slide" id="s-puzzle-solution" data-year="2000">
+    <span class="eyebrow">Solution</span>
+    <h2>You have to go <em>outside</em> the box</h2>
+    <p class="subtitle">Nothing in the rules said the lines had to stay inside the 3×3 grid.</p>
+
+    <div style="display: grid; grid-template-columns: auto 1fr; gap: 2.5rem; align-items: center; margin-top: 1.5rem;">
+      <div class="crt-screen" style="width: min(380px, 55vh); max-width: 100%;">
+        <svg viewBox="0 0 500 500" style="display: block; width: 100%; height: auto;">
+          <defs>
+            <filter id="crtGlow2" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3.5" result="blur"/>
+              <feMerge>
+                <feMergeNode in="blur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+            <radialGradient id="crtVignette2" cx="50%" cy="50%" r="70%">
+              <stop offset="60%" stop-color="#050a05" stop-opacity="0"/>
+              <stop offset="100%" stop-color="#000" stop-opacity="0.8"/>
+            </radialGradient>
+          </defs>
+          <rect x="0" y="0" width="500" height="500" fill="#060c06"/>
+          <!-- the imaginary "box" everyone draws in their head -->
+          <rect x="120" y="120" width="260" height="260" fill="none" stroke="#2a5a2a" stroke-dasharray="5 6" stroke-width="1.5"/>
+          <!-- the 4-line solution path -->
+          <polyline points="150,400 150,50 450,350 150,350 450,50"
+                    fill="none" stroke="#7fff7f" stroke-width="3.5"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    filter="url(#crtGlow2)" opacity="0.95"/>
+          <!-- dots on top -->
+          <g filter="url(#crtGlow2)">
+            <circle cx="150" cy="150" r="10" fill="#c8f0c8"/>
+            <circle cx="250" cy="150" r="10" fill="#c8f0c8"/>
+            <circle cx="350" cy="150" r="10" fill="#c8f0c8"/>
+            <circle cx="150" cy="250" r="10" fill="#c8f0c8"/>
+            <circle cx="250" cy="250" r="10" fill="#c8f0c8"/>
+            <circle cx="350" cy="250" r="10" fill="#c8f0c8"/>
+            <circle cx="150" cy="350" r="10" fill="#c8f0c8"/>
+            <circle cx="250" cy="350" r="10" fill="#c8f0c8"/>
+            <circle cx="350" cy="350" r="10" fill="#c8f0c8"/>
+          </g>
+          <!-- step numbers, placed at midpoints of each segment -->
+          <g font-family="'SF Mono', Menlo, monospace" font-size="18" font-weight="700">
+            <!-- ① line 1 midpoint (150, 225) offset left -->
+            <circle cx="115" cy="225" r="15" fill="#060c06" stroke="#ffd78a" stroke-width="2" filter="url(#crtGlow2)"/>
+            <text x="115" y="225" text-anchor="middle" dominant-baseline="central" fill="#ffd78a" filter="url(#crtGlow2)">1</text>
+            <!-- ② line 2 midpoint (300, 200) offset upper-right -->
+            <circle cx="340" cy="160" r="15" fill="#060c06" stroke="#ffd78a" stroke-width="2" filter="url(#crtGlow2)"/>
+            <text x="340" y="160" text-anchor="middle" dominant-baseline="central" fill="#ffd78a" filter="url(#crtGlow2)">2</text>
+            <!-- ③ line 3 midpoint (300, 350) offset below -->
+            <circle cx="300" cy="395" r="15" fill="#060c06" stroke="#ffd78a" stroke-width="2" filter="url(#crtGlow2)"/>
+            <text x="300" y="395" text-anchor="middle" dominant-baseline="central" fill="#ffd78a" filter="url(#crtGlow2)">3</text>
+            <!-- ④ line 4 lower-left portion, clear of dots -->
+            <circle cx="205" cy="310" r="15" fill="#060c06" stroke="#ffd78a" stroke-width="2" filter="url(#crtGlow2)"/>
+            <text x="205" y="310" text-anchor="middle" dominant-baseline="central" fill="#ffd78a" filter="url(#crtGlow2)">4</text>
+          </g>
+          <rect x="0" y="0" width="500" height="500" fill="url(#crtVignette2)" pointer-events="none"/>
+        </svg>
+      </div>
+
+      <div>
+        <h3 style="color: var(--accent); font-size: 1.1rem; text-transform: uppercase; letter-spacing: 2px;">The trick</h3>
+        <ul style="margin-top: 0.8rem; font-size: 1.1rem; line-height: 1.8;">
+          <li>Start at the bottom-left dot.</li>
+          <li><strong>①</strong> straight up, <em>past</em> the top row.</li>
+          <li><strong>②</strong> diagonal down through the middle, <em>past</em> the right edge.</li>
+          <li><strong>③</strong> left across the bottom row, back to the start.</li>
+          <li><strong>④</strong> diagonal up through the middle, <em>past</em> the top-right.</li>
+        </ul>
+        <p style="margin-top: 1rem; color: var(--muted); font-size: 1rem;">The dashed square is the box nobody told you was there.</p>
+      </div>
+    </div>
+
+    <div class="callout blue" style="margin-top: 1.2rem;">
+      This is where the phrase <strong>"think outside the box"</strong> comes from. The solution was always allowed — you just couldn't see it if you assumed walls that weren't in the rules.
+    </div>
+
+    <span class="slide-num">12</span>
+  </section>
+
+  <!-- THE CONDOR CLUSTER — photo (reveal first) -->
+  <section class="slide photo-slide" id="s-condor-photo" data-year="2010">
+    <span class="eyebrow">2010 · Rome, NY</span>
+    <h2>What on earth <em>is</em> this?</h2>
+    <figure class="photo-figure">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/1/10/CondorCluster.png"
+           alt="Rows of stacked PlayStation 3 consoles wired into a supercomputer at the US Air Force Research Lab"
+           loading="lazy" />
+      <figcaption>
+        A room inside the US Air Force Research Lab. ·
+        <a href="https://commons.wikimedia.org/wiki/File:CondorCluster.png" target="_blank" rel="noopener" style="color: var(--accent);">photo via Wikimedia Commons</a>
+      </figcaption>
+    </figure>
+    <span class="slide-num">13</span>
+  </section>
+
+  <!-- THE CONDOR CLUSTER — explanation -->
   <section class="slide" id="s-condor" data-year="2010">
-    <span class="eyebrow">2010 · US Air Force</span>
+    <span class="eyebrow">US Air Force · Condor Cluster</span>
     <h2>A supercomputer made of PlayStations</h2>
-    <p class="subtitle">No, really. They bought 1,760 of them and wired them together.</p>
+    <p class="subtitle">Yes — 1,760 PS3s, wired together. That's what you just saw.</p>
 
     <div class="stats" style="margin-top: 2rem;">
       <div class="stat">
         <div class="big">1,760</div>
-        <div class="cap">PlayStation 3s, wired together in Rome, New York</div>
+        <div class="cap">PlayStation 3s, stacked in Rome, New York</div>
       </div>
       <div class="stat">
         <div class="big">#33</div>
-        <div class="cap">It became one of the 35 fastest supercomputers in the world</div>
+        <div class="cap">One of the 35 fastest supercomputers in the world</div>
       </div>
       <div class="stat">
         <div class="big">$2M</div>
@@ -1073,29 +1690,51 @@
     </p>
 
     <div class="callout teal" style="margin-top: 1.2rem;">
-      It's the same story as <a href="https://en.wikipedia.org/wiki/AlexNet" target="_blank" rel="noopener" style="color: var(--accent);">AlexNet (2012)</a>: the cheapest super-fast computer chips on Earth get built for <em>video games</em>. Then scientists swoop in and use them for AI.
+      A classic outside-the-box move: the cheapest super-fast computer chips on Earth were built for <em>video games</em>. The Air Force was the first to swoop in and use them for real work.
     </div>
 
     <p class="eliza-hint" style="margin-top: 1.2rem;">
       → <a href="https://en.wikipedia.org/wiki/PlayStation_3_cluster" target="_blank" rel="noopener" style="color: var(--accent);">en.wikipedia.org/wiki/PlayStation_3_cluster</a>
     </p>
-    <span class="slide-num">09</span>
+    <span class="slide-num">14</span>
   </section>
 
-  <!-- THE CONDOR CLUSTER — photo -->
-  <section class="slide photo-slide" id="s-condor-photo" data-year="2010">
-    <span class="eyebrow">behold.</span>
-    <h2>The Condor Cluster, in real life</h2>
-    <figure class="photo-figure">
-      <img src="https://upload.wikimedia.org/wikipedia/commons/1/10/CondorCluster.png"
-           alt="Rows of stacked PlayStation 3 consoles wired into a supercomputer at the US Air Force Research Lab"
-           loading="lazy" />
-      <figcaption>
-        1,760 PS3s in racks at the Air Force Research Lab, Rome NY. ·
-        <a href="https://commons.wikimedia.org/wiki/File:CondorCluster.png" target="_blank" rel="noopener" style="color: var(--accent);">photo via Wikimedia Commons</a>
-      </figcaption>
-    </figure>
-    <span class="slide-num">10</span>
+  <!-- ALEXNET: GAMING SAVED AI -->
+  <section class="slide" id="s-gpu" data-year="2012">
+    <span class="eyebrow">2012 · University of Toronto</span>
+    <h2>Gaming saved AI</h2>
+    <p class="subtitle">Three people. Two GPUs. One contest. The result changed everything.</p>
+
+    <div class="cols-2" style="margin-top: 1.8rem;">
+      <div>
+        <h3>The team</h3>
+        <ul style="margin-top: 0.6rem;">
+          <li><strong>Geoffrey Hinton</strong> — a professor who never stopped believing AI could work, even when everyone else gave up.</li>
+          <li><strong>Alex Krizhevsky</strong> — his student. Wrote almost all the code. The project is named after him.</li>
+          <li><strong>Ilya Sutskever</strong> — his other student. (Years later, he helped start OpenAI.)</li>
+        </ul>
+        <p style="margin-top: 0.9rem; color: var(--muted); font-size: 1rem;">All three at the <strong>University of Toronto</strong>.</p>
+      </div>
+      <div>
+        <h3>The setup</h3>
+        <ul style="margin-top: 0.6rem;">
+          <li>Two <strong>NVIDIA GTX 580</strong> cards — the same kind used to play video games.</li>
+          <li>About <strong>$1,000</strong> of gear, running in Alex's bedroom.</li>
+          <li>They showed it <a href="https://en.wikipedia.org/wiki/ImageNet" target="_blank" rel="noopener" style="color: var(--accent);">1.2 million photos</a> to learn from.</li>
+          <li>The task: look at a picture and name what's in it.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout teal" style="margin-top: 1.5rem;">
+      <strong>What happened:</strong> their AI got it wrong only <strong>15%</strong> of the time. The best other team got it wrong <strong>26%</strong> of the time. Not close. Almost overnight, every AI lab in the world started using gaming cards.
+    </div>
+
+    <p style="margin-top: 1rem; color: var(--muted); max-width: 85ch; font-size: 1.05rem;">
+      That's the moment AI took off for real. Every smart chatbot, photo filter, and self-driving car you've heard of traces back to this bedroom project.
+    </p>
+
+    <span class="slide-num">15</span>
   </section>
 
   <!-- THE HINGE: 2017 Transformer -->
@@ -1156,7 +1795,68 @@
         </ul>
       </div>
     </div>
-    <span class="slide-num">11</span>
+    <span class="slide-num">16</span>
+  </section>
+
+  <!-- 17. WARM-UP: ONE-WORD STORY -->
+  <section class="slide" id="s-oneword" data-year="2017">
+    <span class="eyebrow">Warm-up</span>
+    <h2>One-Word Story</h2>
+    <p class="subtitle">A group tells a story together — one word at a time.</p>
+
+    <div class="cols-2" style="margin-top: 1.8rem;">
+      <div>
+        <h3>How to play</h3>
+        <ul style="margin-top: 0.6rem;">
+          <li>Everyone stands in a circle.</li>
+          <li>Person 1 says <strong>one word</strong> to start the story.</li>
+          <li>Person 2 adds <strong>one word</strong>. Then Person 3. And so on around the circle.</li>
+          <li>No planning ahead. Say the first word that fits what came before.</li>
+          <li>Keep going until someone lands on a natural ending — say <em>"The end."</em></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Example</h3>
+        <p style="font-family: 'SF Mono', Menlo, monospace; font-size: 1.1rem; color: var(--accent); line-height: 1.9; margin-top: 0.6rem;">
+          "Once" &rarr; "upon" &rarr; "a" &rarr; "dragon" &rarr; "ate" &rarr; "my" &rarr; "homework" &rarr; "and" &rarr; "burped." &rarr; "The end."
+        </p>
+        <p style="margin-top: 1rem; color: var(--muted); font-size: 1rem;">
+          Each word only makes sense <em>because of the words before it</em>. You're choosing the most likely next word, given the context.
+        </p>
+      </div>
+    </div>
+
+    <p style="position: absolute; bottom: 1.2rem; left: 2rem; font-size: 0.75rem; color: var(--muted); margin: 0;">
+      Source: <a href="https://bbbpress.com/2013/01/one-word-story/" target="_blank" rel="noopener" style="color: var(--muted); text-decoration: underline;">bbbpress.com — "One Word Story"</a>
+    </p>
+    <span class="slide-num">17</span>
+  </section>
+
+  <!-- Tokens & embeddings — interactive toy tokenizer -->
+  <section class="slide" id="s-tokens-embed" data-year="2017">
+    <h2>Computers don't see words. They see numbers.</h2>
+    <p class="subtitle">Before the AI can think about a sentence, every word gets turned into a list of numbers. Try it!</p>
+
+    <input type="text" id="tok-input" class="tok-input"
+           value="The cat sat"
+           spellcheck="false" autocomplete="off" />
+
+    <div class="tok-columns" id="tok-columns"></div>
+
+    <p style="margin-top: 1.2rem; max-width: 80ch;">
+      Each list of numbers is like a <strong>spot on a giant map of meanings</strong>. Words with similar meanings end up near each other on the map. The AI does all its thinking by moving these number-lists around.
+    </p>
+    <p style="margin-top: 0.4rem; color: var(--muted); font-size: 0.85rem; max-width: 80ch;">
+      Try typing <em>unbelievable</em> — see how it gets chopped up. Try <em>The</em> and <em>the</em> — they get different numbers (capital matters!). The real AI tokenizers below are way smarter than this one.
+    </p>
+    <div class="tok-vendors">
+      <span style="color: var(--muted); font-size: 0.8rem; align-self: center;">try the real ones →</span>
+      <a class="tok-vendor" href="https://platform.openai.com/tokenizer" target="_blank" rel="noopener">OpenAI (GPT-4 / GPT-5)</a>
+      <a class="tok-vendor" href="https://lunary.ai/anthropic-tokenizer" target="_blank" rel="noopener">Anthropic (Claude)</a>
+      <a class="tok-vendor" href="https://aistudio.google.com/app/prompts/new_chat" target="_blank" rel="noopener">Google (Gemini)</a>
+      <a class="tok-vendor" href="https://tiktokenizer.vercel.app/" target="_blank" rel="noopener">Tiktokenizer (all-in-one)</a>
+    </div>
+    <span class="slide-num">18</span>
   </section>
 
   <!-- Pipeline overview -->
@@ -1257,34 +1957,7 @@
     <p style="margin-top: 1rem; max-width: 90ch;">
       Every reply you've ever gotten from ChatGPT works exactly like this — guessing one word at a time, over and over. A short answer like <em>"Hello, how can I help you today?"</em> takes about 10 – 15 trips through the loop.
     </p>
-    <span class="slide-num">12</span>
-  </section>
-
-  <!-- Tokens & embeddings — interactive toy tokenizer -->
-  <section class="slide" id="s-tokens-embed" data-year="2017">
-    <h2>Computers don't see words. They see numbers.</h2>
-    <p class="subtitle">Before the AI can think about a sentence, every word gets turned into a list of numbers. Try it!</p>
-
-    <input type="text" id="tok-input" class="tok-input"
-           value="The cat sat on the unbelievable mat."
-           spellcheck="false" autocomplete="off" />
-
-    <div class="tok-columns" id="tok-columns"></div>
-
-    <p style="margin-top: 1.2rem; max-width: 80ch;">
-      Each list of numbers is like a <strong>spot on a giant map of meanings</strong>. Words with similar meanings end up near each other on the map. The AI does all its thinking by moving these number-lists around.
-    </p>
-    <p style="margin-top: 0.4rem; color: var(--muted); font-size: 0.85rem; max-width: 80ch;">
-      Try typing <em>unbelievable</em> — see how it gets chopped up. Try <em>The</em> and <em>the</em> — they get different numbers (capital matters!). The real AI tokenizers below are way smarter than this one.
-    </p>
-    <div class="tok-vendors">
-      <span style="color: var(--muted); font-size: 0.8rem; align-self: center;">try the real ones →</span>
-      <a class="tok-vendor" href="https://platform.openai.com/tokenizer" target="_blank" rel="noopener">OpenAI (GPT-4 / GPT-5)</a>
-      <a class="tok-vendor" href="https://lunary.ai/anthropic-tokenizer" target="_blank" rel="noopener">Anthropic (Claude)</a>
-      <a class="tok-vendor" href="https://aistudio.google.com/app/prompts/new_chat" target="_blank" rel="noopener">Google (Gemini)</a>
-      <a class="tok-vendor" href="https://tiktokenizer.vercel.app/" target="_blank" rel="noopener">Tiktokenizer (all-in-one)</a>
-    </div>
-    <span class="slide-num">13</span>
+    <span class="slide-num">19</span>
   </section>
 
   <!-- Attention · Stage 1: Look around -->
@@ -1292,7 +1965,7 @@
     <h2>How "attention" works</h2>
     <p class="subtitle">The AI is reading "<em>The cat sat on the ___</em>" and trying to guess the next word.</p>
 
-    <div class="attn-stage" style="max-width: 860px; margin-top: 1.2rem;">
+    <div class="attn-stage" style="max-width: min(860px, 85vh); margin-top: 1.2rem;">
       <div class="attn-stage-label"><span class="attn-num">1</span> Look around</div>
       <div class="attn-stage-sub">For each earlier word, the AI asks: <em>"how useful are you for guessing what comes next?"</em></div>
       <svg viewBox="0 0 360 220" class="attn-svg" xmlns="http://www.w3.org/2000/svg">
@@ -1322,7 +1995,7 @@
       </svg>
     </div>
 
-    <span class="slide-num">14</span>
+    <span class="slide-num">20</span>
   </section>
 
   <!-- Attention · Stage 2: The reveal -->
@@ -1331,9 +2004,10 @@
     <h2>It picks <span style="color: var(--accent);">"mat"</span> ✨</h2>
     <p class="subtitle">It mixes meaning from the words that mattered most — and picks the most likely one.</p>
 
-    <div class="attn-stage" style="max-width: 860px; margin-top: 1.2rem;">
+    <div class="attn-stage" style="max-width: min(860px, 85vh); margin-top: 1.2rem;">
       <div class="attn-stage-label"><span class="attn-num">2</span> Guess the word</div>
-      <svg viewBox="0 0 360 220" class="attn-svg" xmlns="http://www.w3.org/2000/svg">
+      <svg viewBox="0 0 360 320" class="attn-svg" xmlns="http://www.w3.org/2000/svg">
+        <!-- context tokens -->
         <g font-family="'SF Mono', Menlo, monospace" font-size="13" text-anchor="middle">
           <g class="tok val"><rect x="10"  y="20" width="50" height="32" rx="4"/><text x="35"  y="41">The</text></g>
           <g class="tok val"><rect x="68"  y="20" width="50" height="32" rx="4"/><text x="93"  y="41">cat</text></g>
@@ -1341,6 +2015,7 @@
           <g class="tok val"><rect x="184" y="20" width="50" height="32" rx="4"/><text x="209" y="41">on</text></g>
           <g class="tok val"><rect x="242" y="20" width="50" height="32" rx="4"/><text x="267" y="41">the</text></g>
         </g>
+        <!-- attention weights all pool into the winner -->
         <g fill="none" stroke="var(--era5)" stroke-linecap="round">
           <path d="M 35  52 Q 35  110 180 158"  stroke-width="1"   opacity="0.3"/>
           <path d="M 93  52 Q 93  110 180 158"  stroke-width="2.5" opacity="0.7"/>
@@ -1348,8 +2023,44 @@
           <path d="M 209 52 Q 209 110 180 158"  stroke-width="1.2" opacity="0.4"/>
           <path d="M 267 52 Q 267 110 180 158"  stroke-width="1.2" opacity="0.4"/>
         </g>
-        <g font-family="'SF Mono', Menlo, monospace" font-size="16" text-anchor="middle">
-          <g class="tok tok-focus"><rect x="130" y="160" width="100" height="44" rx="6"/><text x="180" y="190" font-weight="700">mat ✨</text></g>
+
+        <!-- ranked candidates (winner + 4 runners-up) -->
+        <g font-family="'SF Mono', Menlo, monospace" font-size="13">
+          <!-- heading -->
+          <text x="40"  y="148" font-size="10" style="fill: var(--muted);" letter-spacing="2">RANKED CANDIDATES</text>
+
+          <!-- #1 winner: mat -->
+          <g class="tok tok-focus">
+            <rect x="40" y="156" width="280" height="30" rx="6"/>
+          </g>
+          <!-- probability bar behind text (width ≈ prob × 260) -->
+          <rect x="48" y="164" width="190" height="14" rx="3" fill="var(--era3)" opacity="0.25"/>
+          <text x="58"  y="176" font-weight="700" fill="var(--accent)">mat ✨</text>
+          <text x="312" y="176" text-anchor="end" fill="var(--accent)" font-weight="700">0.73</text>
+
+          <!-- #2 floor -->
+          <g class="tok val" opacity="0.7"><rect x="40" y="192" width="280" height="24" rx="5"/></g>
+          <rect x="48" y="198" width="25" height="12" rx="2" fill="var(--era5)" opacity="0.35"/>
+          <text x="58"  y="209" style="fill: var(--fg);">floor</text>
+          <text x="312" y="209" text-anchor="end" style="fill: var(--muted);">0.09</text>
+
+          <!-- #3 rug -->
+          <g class="tok val" opacity="0.55"><rect x="40" y="222" width="280" height="24" rx="5"/></g>
+          <rect x="48" y="228" width="17" height="12" rx="2" fill="var(--era5)" opacity="0.3"/>
+          <text x="58"  y="239" style="fill: var(--fg);">rug</text>
+          <text x="312" y="239" text-anchor="end" style="fill: var(--muted);">0.06</text>
+
+          <!-- #4 ground -->
+          <g class="tok val" opacity="0.45"><rect x="40" y="252" width="280" height="24" rx="5"/></g>
+          <rect x="48" y="258" width="14" height="12" rx="2" fill="var(--era5)" opacity="0.28"/>
+          <text x="58"  y="269" style="fill: var(--fg);">ground</text>
+          <text x="312" y="269" text-anchor="end" style="fill: var(--muted);">0.05</text>
+
+          <!-- #5 couch -->
+          <g class="tok val" opacity="0.35"><rect x="40" y="282" width="280" height="24" rx="5"/></g>
+          <rect x="48" y="288" width="9" height="12" rx="2" fill="var(--era5)" opacity="0.24"/>
+          <text x="58"  y="299" style="fill: var(--fg);">couch</text>
+          <text x="312" y="299" text-anchor="end" style="fill: var(--muted);">0.03</text>
         </g>
       </svg>
     </div>
@@ -1357,7 +2068,33 @@
     <p style="margin-top: 1.4rem; max-width: 85ch;">
       Paying close attention to <strong>"sat"</strong> (something to sit on) and <strong>"cat"</strong> (cats sit on things), the AI ranks every possible next word and picks the one with the highest score: <strong>"mat"</strong>. Then it adds "mat" to the sentence and starts the whole thing over for the <em>next</em> word.
     </p>
-    <span class="slide-num">15</span>
+    <span class="slide-num">21</span>
+  </section>
+
+  <!-- STOP TOKEN: HOW THE LOOP ENDS -->
+  <section class="slide" id="s-stop-token" data-year="2017">
+    <h2>So when does it stop?</h2>
+    <p class="subtitle">The same way One-Word Story ended — with a special "The end."</p>
+
+    <div class="cols-2" style="margin-top: 1.8rem;">
+      <div>
+        <h3>The trick</h3>
+        <p style="margin-top: 0.6rem;">The AI keeps picking the next word in a loop. One of the "words" it's allowed to pick is a <strong>special invisible one</strong> that just means <em>"I'm done."</em></p>
+        <p style="margin-top: 0.9rem;">When the AI picks <em>that</em> word, the loop stops and the answer is shown to you. That's it — no timer, no word count, no human telling it to stop.</p>
+      </div>
+      <div>
+        <h3>What it's called</h3>
+        <p style="margin-top: 0.6rem;">AI researchers call it a <strong>stop token</strong> (or an <em>end-of-sequence</em> token). In GPT-style models it's literally written <code style="background: var(--code-bg); padding: 0.1rem 0.4rem; border-radius: 3px;">&lt;|endoftext|&gt;</code>.</p>
+        <p style="margin-top: 0.6rem; color: var(--muted); font-size: 1rem;">If you've written code, you've seen <strong>EOF</strong> — "end of file." Same idea: a special marker that means <em>"nothing more after this."</em></p>
+        <p style="margin-top: 0.9rem; color: var(--muted); font-size: 1rem;">You never see it. The chat app hides it and stops streaming new text.</p>
+      </div>
+    </div>
+
+    <div class="callout blue" style="margin-top: 1.5rem;">
+      Every sentence the AI gives you ends because it chose <strong>"The end."</strong> as the most likely next word. Same move you made in the warm-up — just with a fancier name.
+    </div>
+
+    <span class="slide-num">22</span>
   </section>
 
   <!-- 8. Transformer demos -->
@@ -1378,7 +2115,7 @@
         <div class="dc-url">bbycroft.net/llm</div>
       </a>
     </div>
-    <span class="slide-num">16</span>
+    <span class="slide-num">23</span>
   </section>
 
   <!-- ERA 4: Scaling -->
@@ -1406,14 +2143,14 @@
     <p style="margin-top: 0.6rem; color: var(--muted); font-size: 0.9rem; max-width: 80ch;">
       Want to track how big AI is getting? <a href="https://epoch.ai/trends" target="_blank" rel="noopener" style="color: var(--accent);">epoch.ai/trends</a> keeps a running scoreboard.
     </p>
-    <span class="slide-num">17</span>
+    <span class="slide-num">24</span>
   </section>
 
   <!-- ChatGPT -->
   <section class="slide" id="s10" data-year="2022">
     <span class="eyebrow">November 30, 2022</span>
-    <h2><span class="hinge-title">ChatGPT changes everything</span></h2>
-    <p class="subtitle">OpenAI puts a chat box on their AI. The world goes nuts.</p>
+    <h2><span class="hinge-title">ChatGPT goes viral</span></h2>
+    <p class="subtitle">OpenAI wraps a chat interface around a model they'd had for about two years — and suddenly millions of people try it.</p>
     <div class="stats">
       <div class="stat">
         <div class="big">1M</div>
@@ -1424,14 +2161,14 @@
         <div class="cap">in two months — the fastest-growing app in history</div>
       </div>
     </div>
-    <div class="callout" style="margin-top: 2rem;">
-      Here's the wild part: the AI inside ChatGPT had been around for <em>two years</em> already. Nobody outside tech cared. Then OpenAI added a simple chat window — and suddenly everyone was using it.
-    </div>
-
-    <p style="margin-top: 1.4rem; max-width: 85ch;">
+    <p style="margin-top: 1.8rem; max-width: 85ch;">
       <strong>The Transformer is just the engine.</strong> ChatGPT — and every AI you use — is also made of <em>tons</em> of other code: a chat window, an account system, safety filters, memory of past conversations, a way to handle millions of people at once. The AI brain is one piece. Everything around it is what makes it a <strong>product</strong> — something regular people can actually open up and use.
     </p>
-    <span class="slide-num">18</span>
+
+    <p style="position: absolute; bottom: 1.2rem; left: 2rem; font-size: 0.75rem; color: var(--muted); margin: 0; max-width: 80ch;">
+      GPT-3 was released in <strong>June 2020</strong>. ChatGPT launched <strong>November 30, 2022</strong>, powered by GPT-3.5.
+    </p>
+    <span class="slide-num">25</span>
   </section>
 
   <!-- Anatomy of a harness -->
@@ -1546,7 +2283,40 @@
     <p style="margin-top: 1rem; max-width: 90ch;">
       <strong>Loops inside loops.</strong> Each of those four steps is the Transformer running — and inside the Transformer, it's predicting one word at a time (the loop we saw earlier). So when an AI assistant fixes a bug for you, it's running <em>thousands</em> of tiny prediction loops to do one big task.
     </p>
-    <span class="slide-num">19</span>
+    <span class="slide-num">26</span>
+  </section>
+
+  <!-- PROMPTING ACTIVITY: REQUESTER · PLANNER · DRAWER (MVP) -->
+  <section class="slide" id="s-planner-drawer" data-year="2024">
+    <span class="eyebrow">Activity</span>
+    <h2>Let's do that loop — with a marker</h2>
+    <p class="subtitle">Three volunteers at the front. The same four-step loop, but humans play the parts.</p>
+
+    <div class="cols-2" style="margin-top: 1.8rem;">
+      <div>
+        <h3>Roles</h3>
+        <ul style="margin-top: 0.6rem; line-height: 1.9;">
+          <li><strong>① Requester</strong> — names one thing to draw. <em>e.g. "a busy street."</em></li>
+          <li><strong>② Planner</strong> — breaks it down, checks with the Requester, then directs.</li>
+          <li><strong>③ Drawer</strong> — holds the marker. Only draws what the Planner says.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>The loop</h3>
+        <ol style="margin-top: 0.6rem; padding-left: 1.3rem; line-height: 1.9;">
+          <li>Requester asks.</li>
+          <li>Planner lists up to <strong>5 parts</strong> + colors.</li>
+          <li>Planner asks: <em>"Requester, look good?"</em> → tweak if not.</li>
+          <li>Planner directs the Drawer, one step at a time, until done.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="callout blue" style="margin-top: 1.5rem;">
+      <strong>That's prompting.</strong> The Planner is the prompt. The Drawer is the AI — fast, literal, bad at guessing what you meant.
+    </div>
+
+    <span class="slide-num">27</span>
   </section>
 
   <!-- Harnesses in the wild -->
@@ -1580,7 +2350,7 @@
         <div class="dc-url">aider.chat</div>
       </a>
     </div>
-    <span class="slide-num">20</span>
+    <span class="slide-num">28</span>
   </section>
 
   <!-- Closing — now you try -->
@@ -1605,7 +2375,7 @@
       Bonus: ask it to add something <em>weird</em>. Flying cats. Disco lights. Whatever you can imagine.
     </p>
 
-    <span class="slide-num">21 / 21</span>
+    <span class="slide-num">29 / 29</span>
   </section>
 
   <script>
@@ -2486,14 +3256,12 @@
         if (tokens.length === 0) return;
         for (const tok of tokens) {
           const id = tokenId(tok);
-          const vec = tokenVec(id);
           const col = document.createElement('div');
           col.className = 'tok-col';
           const display = tok.replace(/^ /, '␣');
           col.innerHTML = `
             <div class="tok-cell tok-token">${escapeHtml(display)}</div>
             <div class="tok-cell tok-id">#${id}</div>
-            <div class="tok-cell tok-vec">[${vec[0]}, ${vec[1]}, ${vec[2]}, …]</div>
           `;
           cols.appendChild(col);
         }
@@ -2525,6 +3293,543 @@
       else if (e.key === 'Home') { e.preventDefault(); slides[0].scrollIntoView({ behavior: 'smooth' }); }
       else if (e.key === 'End') { e.preventDefault(); slides[slides.length - 1].scrollIntoView({ behavior: 'smooth' }); }
     });
+
+    // --- PUZZLE TIMER (slide 09) ---
+    (function puzzleTimer() {
+      const wrap = document.getElementById('puzzleTimer');
+      if (!wrap) return;
+      const display = document.getElementById('puzzleTimerDisplay');
+      const startBtn = document.getElementById('puzzleTimerStart');
+      const resetBtn = document.getElementById('puzzleTimerReset');
+      const totalSeconds = parseInt(wrap.dataset.seconds, 10) || 120;
+
+      let remaining = totalSeconds;
+      let endAt = null;
+      let tickId = null;
+      let state = 'idle'; // 'idle' | 'running' | 'paused' | 'done'
+
+      function format(sec) {
+        sec = Math.max(0, Math.ceil(sec));
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return m + ':' + String(s).padStart(2, '0');
+      }
+
+      function render() {
+        display.textContent = format(remaining);
+        display.classList.toggle('warn', state === 'running' && remaining <= 30 && remaining > 0);
+        display.classList.toggle('done', state === 'done');
+        if (state === 'running')      startBtn.textContent = 'PAUSE';
+        else if (state === 'paused')  startBtn.textContent = 'RESUME';
+        else if (state === 'done')    startBtn.textContent = 'RESTART';
+        else                          startBtn.textContent = 'START';
+      }
+
+      function beep() {
+        try {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return;
+          const ctx = new AC();
+          const now = ctx.currentTime;
+          [0, 0.25, 0.5].forEach(offset => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'square';
+            osc.frequency.value = 880;
+            gain.gain.setValueAtTime(0.0001, now + offset);
+            gain.gain.exponentialRampToValueAtTime(0.15, now + offset + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.18);
+            osc.connect(gain).connect(ctx.destination);
+            osc.start(now + offset);
+            osc.stop(now + offset + 0.2);
+          });
+        } catch (e) { /* silent */ }
+      }
+
+      function tick() {
+        remaining = (endAt - performance.now()) / 1000;
+        if (remaining <= 0) {
+          remaining = 0;
+          state = 'done';
+          stopTicking();
+          render();
+          beep();
+          return;
+        }
+        render();
+      }
+
+      function startTicking() {
+        stopTicking();
+        tickId = setInterval(tick, 200);
+      }
+      function stopTicking() {
+        if (tickId) { clearInterval(tickId); tickId = null; }
+      }
+
+      startBtn.addEventListener('click', () => {
+        startBtn.blur();
+        if (state === 'idle' || state === 'done') {
+          remaining = totalSeconds;
+          endAt = performance.now() + remaining * 1000;
+          state = 'running';
+          startTicking();
+          render();
+        } else if (state === 'running') {
+          stopTicking();
+          state = 'paused';
+          render();
+        } else if (state === 'paused') {
+          endAt = performance.now() + remaining * 1000;
+          state = 'running';
+          startTicking();
+          render();
+        }
+      });
+
+      resetBtn.addEventListener('click', () => {
+        resetBtn.blur();
+        stopTicking();
+        remaining = totalSeconds;
+        state = 'idle';
+        render();
+      });
+
+      render();
+    })();
+
+    // --- SNAP · CLAP · STOMP METRONOME (icebreaker slide) ---
+    (function scsMetronome() {
+      const root = document.getElementById('scsMetro');
+      if (!root) return;
+      const beatEl = document.getElementById('scsBeat');
+      const bpmSlider = document.getElementById('scsBpm');
+      const bpmVal = document.getElementById('scsBpmVal');
+      const playBtn = document.getElementById('scsPlay');
+
+      const modeWrap = document.getElementById('scsModeBtns');
+      const ringProgress = document.getElementById('scsRingProgress');
+      const ringBeat     = document.getElementById('scsRingBeat');
+      const ringTicks = document.getElementById('scsRingTicks');
+      const ringPips = document.getElementById('scsRingPips');
+      const RING_R = 180;
+      const RING_CIRC = 2 * Math.PI * RING_R;          // ≈ 1131
+
+      // One full cycle = 12 beats: (1,2,3) × 4 replacement levels.
+      // Per beat label for each of the 12 positions.
+      const SEQUENCE = [
+        { round: 1, step: 0, sound: 'num',   display: 'ONE'   },
+        { round: 1, step: 1, sound: 'num',   display: 'TWO'   },
+        { round: 1, step: 2, sound: 'num',   display: 'THREE' },
+        { round: 2, step: 0, sound: 'snap',  display: '🫰'   },
+        { round: 2, step: 1, sound: 'num',   display: 'TWO'   },
+        { round: 2, step: 2, sound: 'num',   display: 'THREE' },
+        { round: 3, step: 0, sound: 'snap',  display: '🫰'   },
+        { round: 3, step: 1, sound: 'clap',  display: '👏'   },
+        { round: 3, step: 2, sound: 'num',   display: 'THREE' },
+        { round: 4, step: 0, sound: 'snap',  display: '🫰'   },
+        { round: 4, step: 1, sound: 'clap',  display: '👏'   },
+        { round: 4, step: 2, sound: 'stomp', display: '🦶'   },
+      ];
+      const BEATS_PER_CYCLE = SEQUENCE.length;         // 12
+      // Challenge advances from whatever BPM the user has dialled in,
+      // stepping up each full cycle: +10 under 100, +20 under 140, +40 after.
+      // Caps at 800 BPM.
+      const BPM_CAP = 800;
+      function nextChallengeBpm(b) {
+        let nb;
+        if (b < 100)      nb = b + 10;
+        else if (b < 140) nb = b + 20;
+        else              nb = b + 40;
+        return Math.min(nb, BPM_CAP);
+      }
+
+      let mode = 'train';    // 'train' | 'challenge'
+      let bpm = 60;
+      let cycle = 0;          // which full cycle we're in (for challenge BPM lookup)
+      let beatIdx = 0;        // 0..BEATS_PER_CYCLE-1 within current cycle
+      let playing = false;
+      let timerId = null;
+      let audioCtx = null;
+
+      bpmSlider.value = bpm;
+      bpmVal.textContent = bpm;
+
+      // Build round-boundary ticks (4 ticks at every quarter of the ring)
+      for (let i = 0; i < 4; i++) {
+        const angle = -90 + i * 90;   // top, right, bottom, left
+        const rad = angle * Math.PI / 180;
+        const x1 = Math.cos(rad) * (RING_R - 12);
+        const y1 = Math.sin(rad) * (RING_R - 12);
+        const x2 = Math.cos(rad) * (RING_R + 12);
+        const y2 = Math.sin(rad) * (RING_R + 12);
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+        ringTicks.appendChild(line);
+      }
+
+      // Build 12 beat pips
+      const pipEls = [];
+      for (let i = 0; i < BEATS_PER_CYCLE; i++) {
+        const angle = -90 + (i / BEATS_PER_CYCLE) * 360;
+        const rad = angle * Math.PI / 180;
+        const cx = Math.cos(rad) * RING_R;
+        const cy = Math.sin(rad) * RING_R;
+        const pip = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        pip.setAttribute('cx', cx); pip.setAttribute('cy', cy);
+        pip.setAttribute('r', 3);
+        ringPips.appendChild(pip);
+        pipEls.push(pip);
+      }
+
+      function ctx() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        return audioCtx;
+      }
+
+      function envelope(gainNode, t0, attack, hold, release, peak) {
+        const g = gainNode.gain;
+        g.cancelScheduledValues(t0);
+        g.setValueAtTime(0.0001, t0);
+        g.exponentialRampToValueAtTime(peak, t0 + attack);
+        g.setValueAtTime(peak, t0 + attack + hold);
+        g.exponentialRampToValueAtTime(0.0001, t0 + attack + hold + release);
+      }
+
+      function playSnap() {
+        const a = ctx(); const t = a.currentTime;
+        // very short high-frequency ping + noise click
+        const osc = a.createOscillator(); osc.type = 'triangle'; osc.frequency.value = 3200;
+        const g = a.createGain();
+        envelope(g, t, 0.002, 0.005, 0.05, 0.35);
+        osc.connect(g).connect(a.destination);
+        osc.start(t); osc.stop(t + 0.08);
+      }
+      function playClap() {
+        const a = ctx(); const t = a.currentTime;
+        // short noise burst filtered at ~1.5kHz
+        const bufferSize = a.sampleRate * 0.12;
+        const buffer = a.createBuffer(1, bufferSize, a.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+        const src = a.createBufferSource(); src.buffer = buffer;
+        const bp = a.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1500; bp.Q.value = 1;
+        const g = a.createGain();
+        envelope(g, t, 0.001, 0.01, 0.08, 0.5);
+        src.connect(bp).connect(g).connect(a.destination);
+        src.start(t); src.stop(t + 0.12);
+      }
+      function playStomp() {
+        const a = ctx(); const t = a.currentTime;
+        const osc = a.createOscillator(); osc.type = 'sine';
+        osc.frequency.setValueAtTime(120, t);
+        osc.frequency.exponentialRampToValueAtTime(45, t + 0.18);
+        const g = a.createGain();
+        envelope(g, t, 0.003, 0.02, 0.18, 0.8);
+        osc.connect(g).connect(a.destination);
+        osc.start(t); osc.stop(t + 0.22);
+      }
+
+      function speakNum(n) {
+        if (!('speechSynthesis' in window)) return;
+        const u = new SpeechSynthesisUtterance(['one', 'two', 'three'][n]);
+        u.rate = 1.35;
+        u.pitch = 0.95;
+        u.volume = 1.0;
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(u);
+      }
+
+      function doBeat() {
+        const s = SEQUENCE[beatIdx];
+        if (s.sound === 'snap')       playSnap();
+        else if (s.sound === 'clap')  playClap();
+        else if (s.sound === 'stomp') playStomp();
+        else                          speakNum(s.step);
+
+        beatEl.textContent = s.display;
+        // Spelled-out numbers get the smaller "word" size so they fit on one line.
+        // Emojis stay at the full display size.
+        beatEl.classList.toggle('word', /[A-Z]/.test(s.display));
+        // Run one pulse cycle per beat — pop in on the downbeat, shrink/fade
+        // toward the next one. Duration tracks the current BPM.
+        beatEl.style.setProperty('--beat-duration', (60000 / bpm) + 'ms');
+        beatEl.classList.remove('pulse');
+        void beatEl.offsetWidth;
+        beatEl.classList.add('pulse');
+      }
+
+      function updateRing() {
+        if (!playing) {
+          ringProgress.setAttribute('stroke-dasharray', '0 ' + RING_CIRC);
+          ringBeat.classList.remove('on');
+          pipEls.forEach(p => { p.classList.remove('played', 'current'); });
+          return;
+        }
+        // progress arc fills up to the current beat
+        const t = (beatIdx + 1) / BEATS_PER_CYCLE;     // how much of this cycle is "done"
+        const arc = t * RING_CIRC;
+        ringProgress.setAttribute('stroke-dasharray', arc + ' ' + (RING_CIRC - arc));
+        // beat marker dot position — sits on the current beat pip
+        const angle = -90 + (beatIdx / BEATS_PER_CYCLE) * 360;
+        const rad = angle * Math.PI / 180;
+        ringBeat.setAttribute('cx', Math.cos(rad) * RING_R);
+        ringBeat.setAttribute('cy', Math.sin(rad) * RING_R);
+        ringBeat.classList.add('on');
+        // pip states
+        pipEls.forEach((p, i) => {
+          p.classList.toggle('current', i === beatIdx);
+          p.classList.toggle('played', i < beatIdx);
+        });
+      }
+
+      function setBpm(v) {
+        bpm = v;
+        bpmSlider.value = v;
+        bpmVal.textContent = v;
+      }
+
+      function schedule() {
+        if (!playing) return;
+        doBeat();
+        updateRing();
+
+        beatIdx++;
+        if (beatIdx >= BEATS_PER_CYCLE) {
+          beatIdx = 0;
+          cycle++;
+          if (mode === 'challenge') {
+            const next = nextChallengeBpm(bpm);
+            if (next === bpm) {
+              // Hit the cap — flourish + stop.
+              beatEl.textContent = '★';
+              beatEl.classList.remove('word');
+              stop();
+              return;
+            }
+            setBpm(next);
+          }
+          // Train mode: BPM stays wherever the slider says.
+        }
+
+        const msPerBeat = 60000 / bpm;
+        timerId = setTimeout(schedule, msPerBeat);
+      }
+
+      function start() {
+        ctx().resume && ctx().resume();
+        cycle = 0;
+        beatIdx = 0;
+        // Both modes start from whatever BPM the slider is currently on.
+        playing = true;
+        playBtn.textContent = 'STOP';
+        playBtn.classList.add('playing');
+        schedule();
+      }
+      function stop() {
+        playing = false;
+        if (timerId) { clearTimeout(timerId); timerId = null; }
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        playBtn.textContent = 'PLAY';
+        playBtn.classList.remove('playing');
+        if (beatEl.textContent !== '★') beatEl.textContent = '—';
+        beatEl.classList.remove('pulse', 'word');
+        updateRing();
+      }
+
+      // Slider ↔ BPM (two-way bind — always usable; setBpm mirrors
+       // programmatic changes back to the slider).
+      bpmSlider.addEventListener('input', () => {
+        setBpm(parseInt(bpmSlider.value, 10));
+      });
+
+      playBtn.addEventListener('click', () => {
+        playBtn.blur();
+        playing ? stop() : start();
+      });
+      modeWrap.addEventListener('click', (e) => {
+        const btn = e.target.closest('.met-mode-btn');
+        if (!btn) return;
+        btn.blur();
+        // Mode switch only changes whether BPM auto-advances between cycles.
+        // It doesn't touch the slider or reset anything else.
+        mode = btn.dataset.mode;
+        modeWrap.querySelectorAll('.met-mode-btn').forEach(b => b.classList.toggle('active', b === btn));
+      });
+
+      // initial UI
+      updateRing();
+
+      // Pause when the metronome slide scrolls out of view, so audio doesn't
+      // keep going while the user is on other slides.
+      const metSlide = document.getElementById('s-icebreaker-metronome');
+      if (metSlide && 'IntersectionObserver' in window) {
+        const io = new IntersectionObserver((entries) => {
+          entries.forEach(e => {
+            if (!e.isIntersecting && playing) stop();
+          });
+        }, { threshold: 0.3 });
+        io.observe(metSlide);
+      }
+
+      // stop playback if the user navigates away to avoid lingering audio
+      window.addEventListener('beforeunload', stop);
+    })();
+
+    // --- INTERACTIVE NINE-DOT PUZZLE (slide 09) ---
+    (function ninePuzzle() {
+      const svg = document.getElementById('puzzleSvg');
+      if (!svg) return;
+      const linesG     = document.getElementById('puzzleUserLines');
+      const preview    = document.getElementById('puzzlePreview');
+      const anchorDot  = document.getElementById('puzzleAnchor');
+      const lineCountEl = document.getElementById('puzzleLineCount');
+      const dotCountEl  = document.getElementById('puzzleDotCount');
+      const msgEl      = document.getElementById('puzzleMessage');
+      const dotEls     = Array.from(svg.querySelectorAll('.puzzle-dot'));
+
+      const DOTS = dotEls.map(el => ({
+        x: parseFloat(el.getAttribute('cx')),
+        y: parseFloat(el.getAttribute('cy')),
+        el
+      }));
+      const SNAP_RADIUS = 30;   // click within this many SVG units of a dot → snap
+      const HIT_RADIUS  = 10;   // line passes within this many units of a dot → dot counts as hit
+
+      let anchor = null;        // {x, y}
+      let lineCount = 0;
+      let finished = false;     // locked once win/fail message shown
+
+      function svgPoint(evt) {
+        const rect = svg.getBoundingClientRect();
+        const vb = svg.viewBox.baseVal;
+        const x = (evt.clientX - rect.left) / rect.width  * vb.width;
+        const y = (evt.clientY - rect.top)  / rect.height * vb.height;
+        return { x, y };
+      }
+
+      function snap(p) {
+        let best = null, bestD = SNAP_RADIUS;
+        for (const d of DOTS) {
+          const dd = Math.hypot(p.x - d.x, p.y - d.y);
+          if (dd < bestD) { best = d; bestD = dd; }
+        }
+        return best ? { x: best.x, y: best.y } : p;
+      }
+
+      // Distance from point (px,py) to segment (x1,y1)-(x2,y2).
+      function distToSegment(px, py, x1, y1, x2, y2) {
+        const dx = x2 - x1, dy = y2 - y1;
+        const len2 = dx * dx + dy * dy;
+        if (len2 === 0) return Math.hypot(px - x1, py - y1);
+        let t = ((px - x1) * dx + (py - y1) * dy) / len2;
+        t = Math.max(0, Math.min(1, t));
+        const qx = x1 + t * dx, qy = y1 + t * dy;
+        return Math.hypot(px - qx, py - qy);
+      }
+
+      function recomputeHits() {
+        const segs = Array.from(linesG.querySelectorAll('line')).map(l => ({
+          x1: parseFloat(l.getAttribute('x1')),
+          y1: parseFloat(l.getAttribute('y1')),
+          x2: parseFloat(l.getAttribute('x2')),
+          y2: parseFloat(l.getAttribute('y2')),
+        }));
+        let hitCount = 0;
+        for (const d of DOTS) {
+          const hit = segs.some(s => distToSegment(d.x, d.y, s.x1, s.y1, s.x2, s.y2) <= HIT_RADIUS);
+          d.el.classList.toggle('hit', hit);
+          if (hit) hitCount++;
+        }
+        return hitCount;
+      }
+
+      function updateStatus() {
+        const hits = recomputeHits();
+        lineCountEl.textContent = lineCount;
+        dotCountEl.textContent = hits;
+        lineCountEl.setAttribute('fill', lineCount > 4 ? '#ff8a8a' : '#7fff7f');
+
+        msgEl.className = 'puzzle-message';
+        msgEl.textContent = '';
+        if (hits === 9 && lineCount <= 4) {
+          msgEl.classList.add('win');
+          msgEl.textContent = '★ SOLVED — ' + lineCount + ' line' + (lineCount === 1 ? '' : 's') + '. Well played.';
+          finished = true;
+          anchorDot.setAttribute('opacity', '0');
+          preview.setAttribute('opacity', '0');
+        } else if (lineCount >= 4) {
+          msgEl.classList.add('fail');
+          const missed = 9 - hits;
+          msgEl.innerHTML =
+            '4 lines used. ' + missed + ' dot' + (missed === 1 ? '' : 's') +
+            ' still uncovered. ' +
+            '<button type="button" class="pt-btn pt-btn-ghost" id="puzzleTryAgain" style="margin-left: 0.4rem;">TRY AGAIN</button>';
+          finished = true;
+          anchorDot.setAttribute('opacity', '0');
+          preview.setAttribute('opacity', '0');
+          const tryBtn = document.getElementById('puzzleTryAgain');
+          if (tryBtn) tryBtn.addEventListener('click', () => { tryBtn.blur(); clearAll(); });
+        }
+      }
+
+      function setAnchor(p) {
+        anchor = p;
+        anchorDot.setAttribute('cx', p.x);
+        anchorDot.setAttribute('cy', p.y);
+        anchorDot.setAttribute('opacity', '1');
+      }
+
+      function clearAll() {
+        while (linesG.firstChild) linesG.removeChild(linesG.firstChild);
+        lineCount = 0;
+        anchor = null;
+        finished = false;
+        anchorDot.setAttribute('opacity', '0');
+        preview.setAttribute('opacity', '0');
+        for (const d of DOTS) d.el.classList.remove('hit');
+        updateStatus();
+      }
+
+      svg.addEventListener('click', (evt) => {
+        if (finished) return;
+        const p = snap(svgPoint(evt));
+        if (!anchor) {
+          setAnchor(p);
+          return;
+        }
+        // Ignore zero-length clicks at the same point
+        if (Math.hypot(p.x - anchor.x, p.y - anchor.y) < 2) return;
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', anchor.x);
+        line.setAttribute('y1', anchor.y);
+        line.setAttribute('x2', p.x);
+        line.setAttribute('y2', p.y);
+        line.setAttribute('stroke', '#7fff7f');
+        line.setAttribute('stroke-width', '3.5');
+        line.setAttribute('stroke-linecap', 'round');
+        line.setAttribute('opacity', '0.95');
+        linesG.appendChild(line);
+
+        lineCount++;
+        setAnchor(p);
+        updateStatus();
+      });
+
+      svg.addEventListener('mousemove', (evt) => {
+        if (finished || !anchor) { preview.setAttribute('opacity', '0'); return; }
+        const p = snap(svgPoint(evt));
+        preview.setAttribute('x1', anchor.x);
+        preview.setAttribute('y1', anchor.y);
+        preview.setAttribute('x2', p.x);
+        preview.setAttribute('y2', p.y);
+        preview.setAttribute('opacity', '0.55');
+      });
+      svg.addEventListener('mouseleave', () => preview.setAttribute('opacity', '0'));
+
+    })();
   </script>
 </body>
 </html>
