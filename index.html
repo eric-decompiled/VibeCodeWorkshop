@@ -198,12 +198,13 @@
                 this.isOnGround = false;
                 this.timer = 0;
                 this.DESTRUCT_TIME = 30 * 60; // 30 seconds at 60fps
+                this.facingLeft = false;
             }
 
             update(platforms) {
                 this.vx = 0;
-                if (keys.left) this.vx = -this.SPEED;
-                if (keys.right) this.vx = this.SPEED;
+                if (keys.left) { this.vx = -this.SPEED; this.facingLeft = true; }
+                if (keys.right) { this.vx = this.SPEED; this.facingLeft = false; }
 
                 if (keys.up && this.isOnGround) {
                     this.vy = this.JUMP_FORCE;
@@ -359,6 +360,52 @@
         }
 
         // ============================================
+        // FIRE PARTICLES
+        // ============================================
+        const fireParticles = [];
+
+        function spawnFire(player) {
+            const mouthX = player.facingLeft ? player.x : player.x + player.width;
+            const mouthY = player.y + 22;
+            const dir = player.facingLeft ? -1 : 1;
+            for (let i = 0; i < 3; i++) {
+                fireParticles.push({
+                    x: mouthX,
+                    y: mouthY + (Math.random() - 0.5) * 4,
+                    vx: dir * (3 + Math.random() * 4),
+                    vy: (Math.random() - 0.5) * 2,
+                    life: 1.0,
+                    size: 6 + Math.random() * 6,
+                });
+            }
+        }
+
+        function updateFire(player) {
+            spawnFire(player);
+            for (let i = fireParticles.length - 1; i >= 0; i--) {
+                const p = fireParticles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.size *= 0.92;
+                p.life -= 0.045;
+                if (p.life <= 0) fireParticles.splice(i, 1);
+            }
+        }
+
+        function drawFire(ctx) {
+            for (const p of fireParticles) {
+                const r = Math.floor(255);
+                const g = Math.floor(p.life * 180);
+                ctx.globalAlpha = p.life * 0.85;
+                ctx.fillStyle = `rgb(${r},${g},0)`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        // ============================================
         // DOG CLASS
         // ============================================
         class Dog {
@@ -444,6 +491,7 @@
             player.update(platforms);
             cat.update(player, platforms);
             dog.update(player, platforms);
+            updateFire(player);
 
             cameraX = player.x + player.width / 2 - canvas.width / 2;
             if (cameraX < 0) cameraX = 0;
@@ -457,6 +505,7 @@
             }
             cat.draw(ctx);
             dog.draw(ctx);
+            drawFire(ctx);
             player.draw(ctx);
 
             ctx.restore();
