@@ -355,8 +355,6 @@
                 this.JUMP_FORCE = -12;
                 this.GRAVITY = 0.5;
                 this.isOnGround = false;
-                this.timer = 0;
-                this.DESTRUCT_TIME = 30 * 60; // 30 seconds at 60fps
                 this.facingLeft = false;
                 this.attackTimer = 0;
                 this.ATTACK_DURATION = 18;
@@ -404,20 +402,10 @@
                 if (keys.attack && this.attackTimer === 0) this.attackTimer = this.ATTACK_DURATION;
                 if (this.attackTimer > 0) this.attackTimer--;
 
-                this.timer++;
-                if (this.timer >= this.DESTRUCT_TIME) {
-                    this.x = 100;
-                    this.y = 500;
-                    this.vx = 0;
-                    this.vy = 0;
-                    this.timer = 0;
-                }
             }
 
             draw(ctx) {
-                const warning = this.timer > this.DESTRUCT_TIME - 5 * 60;
-                const flash = warning && Math.floor(this.timer / 10) % 2 === 0;
-                ctx.fillStyle = flash ? '#FF0000' : '#27AE60';
+                ctx.fillStyle = '#27AE60';
                 ctx.fillRect(this.x, this.y, this.width, this.height);
 
                 // Name tag
@@ -615,9 +603,9 @@
 
                 this.hopTick++;
                 // Hop toward player every 40 frames if far enough away
-                if (this.hopTick >= 40 && Math.abs(dx) > 30 && this.isOnGround) {
-                    this.vx = (dx / Math.abs(dx)) * 4;
-                    this.vy = -9;
+                if (this.hopTick >= 22 && Math.abs(dx) > 30 && this.isOnGround) {
+                    this.vx = (dx / Math.abs(dx)) * 8;
+                    this.vy = -11;
                     this.isOnGround = false;
                     this.hopTick = 0;
                 }
