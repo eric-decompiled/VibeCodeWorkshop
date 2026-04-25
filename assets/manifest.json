@@ -1,0 +1,117 @@
+{
+  "_readme": "Single source of truth for the asset pack. All paths are relative to the repo root so they work from / on GitHub Pages. Art: Kenney (CC0). Music: Ove Melaa. See assets/CREDITS.md.",
+
+  "player": {
+    "spritesheet": "assets/player/walk.png",
+    "sheetSize": { "w": 508, "h": 288 },
+    "animations": {
+      "walk": [
+        { "x": 0,   "y": 0,  "w": 72, "h": 97 },
+        { "x": 73,  "y": 0,  "w": 72, "h": 97 },
+        { "x": 146, "y": 0,  "w": 72, "h": 97 },
+        { "x": 0,   "y": 98, "w": 72, "h": 97 },
+        { "x": 73,  "y": 98, "w": 72, "h": 97 },
+        { "x": 146, "y": 98, "w": 72, "h": 97 },
+        { "x": 219, "y": 0,  "w": 72, "h": 97 },
+        { "x": 292, "y": 0,  "w": 72, "h": 97 },
+        { "x": 219, "y": 98, "w": 72, "h": 97 },
+        { "x": 365, "y": 0,  "w": 72, "h": 97 },
+        { "x": 292, "y": 98, "w": 72, "h": 97 }
+      ],
+      "stand": { "x": 67,  "y": 196, "w": 66, "h": 92 },
+      "jump":  { "x": 438, "y": 93,  "w": 67, "h": 94 },
+      "hurt":  { "x": 438, "y": 0,   "w": 69, "h": 92 },
+      "duck":  { "x": 365, "y": 98,  "w": 69, "h": 71 }
+    },
+    "poses": {
+      "stand": "assets/player/stand.png",
+      "jump":  "assets/player/jump.png",
+      "hurt":  "assets/player/hurt.png",
+      "duck":  "assets/player/duck.png"
+    }
+  },
+
+  "tiles": {
+    "grass_mid":    "assets/tiles/grass_mid.png",
+    "grass_left":   "assets/tiles/grass_left.png",
+    "grass_right":  "assets/tiles/grass_right.png",
+    "grass_center": "assets/tiles/grass_center.png",
+    "dirt":         "assets/tiles/dirt.png",
+    "stone":        "assets/tiles/stone.png",
+    "sand":         "assets/tiles/sand.png",
+    "box":          "assets/tiles/box.png",
+    "box_coin":     "assets/tiles/box_coin.png",
+    "box_empty":    "assets/tiles/box_empty.png",
+    "ladder_mid":   "assets/tiles/ladder_mid.png",
+    "ladder_top":   "assets/tiles/ladder_top.png",
+    "door_top":     "assets/tiles/door_top.png",
+    "door_mid":     "assets/tiles/door_mid.png"
+  },
+
+  "items": {
+    "coin_gold":     "assets/items/coin_gold.png",
+    "coin_silver":   "assets/items/coin_silver.png",
+    "coin_bronze":   "assets/items/coin_bronze.png",
+    "gem_blue":      "assets/items/gem_blue.png",
+    "gem_red":       "assets/items/gem_red.png",
+    "gem_green":     "assets/items/gem_green.png",
+    "gem_yellow":    "assets/items/gem_yellow.png",
+    "key_yellow":    "assets/items/key_yellow.png",
+    "star":          "assets/items/star.png",
+    "mushroom_red":  "assets/items/mushroom_red.png",
+    "spikes":        "assets/items/spikes.png",
+    "flag_green":    "assets/items/flag_green.png",
+    "cloud":         "assets/items/cloud.png",
+    "bush":          "assets/items/bush.png",
+    "rock":          "assets/items/rock.png"
+  },
+
+  "enemies": {
+    "slime": {
+      "walk": ["assets/enemies/slime_walk1.png", "assets/enemies/slime_walk2.png"],
+      "dead": "assets/enemies/slime_dead.png"
+    },
+    "fly": {
+      "walk": ["assets/enemies/fly1.png", "assets/enemies/fly2.png"]
+    },
+    "snail": {
+      "walk": ["assets/enemies/snail_walk1.png", "assets/enemies/snail_walk2.png"]
+    },
+    "fish": {
+      "walk": ["assets/enemies/fish_swim1.png", "assets/enemies/fish_swim2.png"]
+    }
+  },
+
+  "hud": {
+    "heart_full":  "assets/hud/heart_full.png",
+    "heart_empty": "assets/hud/heart_empty.png",
+    "heart_half":  "assets/hud/heart_half.png",
+    "coin_icon":   "assets/hud/coin_icon.png",
+    "key_icon":    "assets/hud/key_icon.png"
+  },
+
+  "bg": {
+    "sky":    "assets/bg/sky.png",
+    "castle": "assets/bg/castle.png",
+    "scifi":  "assets/bg/scifi.jpg"
+  },
+
+  "sfx": {
+    "jump":    "assets/sfx/jump.ogg",
+    "coin":    "assets/sfx/coin.ogg",
+    "key":     "assets/sfx/key.ogg",
+    "door":    "assets/sfx/door.ogg",
+    "win":     "assets/sfx/win.ogg",
+    "levelup": "assets/sfx/levelup.ogg",
+    "click":   "assets/sfx/click.ogg",
+    "pickup":  "assets/sfx/pickup.ogg"
+  },
+
+  "music": {
+    "retro":     "assets/music/retro.mp3",
+    "ambient":   "assets/music/ambient.mp3",
+    "town":      "assets/music/town.ogg",
+    "dungeon":   "assets/music/dungeon.ogg",
+    "game_over": "assets/music/game_over.ogg"
+  }
+}

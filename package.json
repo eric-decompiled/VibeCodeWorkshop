@@ -1,0 +1,11 @@
+{
+  "name": "gameworkshop",
+  "private": true,
+  "description": "Vanilla-JS canvas platformer workshop — no build step, no bundler.",
+  "scripts": {
+    "dev": "live-server --port=8000 --ignore=node_modules,static,playbook,*.md"
+  },
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  }
+}

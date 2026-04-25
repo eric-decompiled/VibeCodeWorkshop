@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Gallery — GameWorkShop</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #222;
+            color: #eee;
+            padding: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        header { margin-bottom: 24px; }
+        h1 { font-size: 24px; }
+        h2 { font-size: 18px; margin: 28px 0 12px; color: #ffcc66; border-bottom: 1px solid #444; padding-bottom: 4px; }
+        p.sub { color: #aaa; font-size: 13px; margin-top: 6px; line-height: 1.5; }
+        a { color: #8cf; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+        }
+        .card {
+            background: #333;
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .card:hover { background: #3a3a3a; border-color: #ffcc66; }
+        .card img {
+            max-width: 100%;
+            max-height: 80px;
+            image-rendering: pixelated;
+            display: block;
+            margin: 0 auto 8px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 3px;
+        }
+        .card .key {
+            font-size: 11px;
+            color: #ffcc66;
+            word-break: break-all;
+            line-height: 1.3;
+        }
+        .card .path {
+            font-size: 10px;
+            color: #888;
+            margin-top: 4px;
+            word-break: break-all;
+        }
+
+        .audio-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .audio-card {
+            background: #333;
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .audio-card button {
+            background: #ffcc66;
+            color: #222;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .audio-card button:hover { background: #ffd780; }
+        .audio-card .key {
+            font-size: 13px;
+            color: #eee;
+        }
+
+        .bg-card img { max-height: 140px; }
+
+        #toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ffcc66;
+            color: #222;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            font-size: 14px;
+        }
+        #toast.show { opacity: 1; }
+
+        .nav a { margin-right: 16px; }
+        .loading { color: #888; font-style: italic; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>GameWorkShop — Asset Gallery</h1>
+        <p class="sub">
+            Every sprite and sound in <code>/assets/manifest.json</code>.
+            Click any sprite card to copy its manifest key (<code>tiles.grass_mid</code>) to the clipboard.
+            Hit play on any sound to preview it.
+        </p>
+        <p class="sub nav">
+            <a href="/">Student starter (index.html)</a>
+            <a href="/demo.html">Sprite demo</a>
+            <a href="https://github.com/">Source</a>
+        </p>
+    </header>
+
+    <main id="main"><p class="loading">Loading manifest…</p></main>
+    <div id="toast">copied</div>
+
+    <script>
+        const TOAST = document.getElementById('toast');
+        function toast(msg) {
+            TOAST.textContent = msg;
+            TOAST.classList.add('show');
+            setTimeout(() => TOAST.classList.remove('show'), 1200);
+        }
+
+        function copy(text) {
+            navigator.clipboard?.writeText(text).then(
+                () => toast('copied: ' + text),
+                () => toast('copy failed')
+            );
+        }
+
+        function spriteCard(key, path, groupKey) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            if (groupKey === 'bg') card.classList.add('bg-card');
+
+            const img = document.createElement('img');
+            img.src = path;
+            img.alt = key;
+            img.onerror = () => { img.style.background = '#900'; img.alt = '404 — ' + path; };
+
+            const keyEl = document.createElement('div');
+            keyEl.className = 'key';
+            keyEl.textContent = groupKey ? `${groupKey}.${key}` : key;
+
+            const pathEl = document.createElement('div');
+            pathEl.className = 'path';
+            pathEl.textContent = path;
+
+            card.appendChild(img);
+            card.appendChild(keyEl);
+            card.appendChild(pathEl);
+            card.addEventListener('click', () => copy(groupKey ? `${groupKey}.${key}` : key));
+            return card;
+        }
+
+        function audioCard(key, path, groupKey) {
+            const card = document.createElement('div');
+            card.className = 'audio-card';
+            const btn = document.createElement('button');
+            btn.textContent = '▶';
+            const audio = new Audio(path);
+            btn.addEventListener('click', () => {
+                audio.currentTime = 0;
+                audio.play().catch(() => {});
+            });
+            const label = document.createElement('span');
+            label.className = 'key';
+            label.textContent = `${groupKey}.${key}`;
+            label.style.cursor = 'pointer';
+            label.title = 'click to copy manifest key';
+            label.addEventListener('click', () => copy(`${groupKey}.${key}`));
+            card.appendChild(btn);
+            card.appendChild(label);
+            return card;
+        }
+
+        function section(title, subtitle) {
+            const h = document.createElement('h2');
+            h.textContent = title;
+            const p = document.createElement('p');
+            p.className = 'sub';
+            p.innerHTML = subtitle || '';
+            const frag = document.createDocumentFragment();
+            frag.appendChild(h);
+            if (subtitle) frag.appendChild(p);
+            return frag;
+        }
+
+        function makeGrid() {
+            const g = document.createElement('div');
+            g.className = 'grid';
+            return g;
+        }
+
+        function makeAudioRow() {
+            const r = document.createElement('div');
+            r.className = 'audio-row';
+            return r;
+        }
+
+        async function boot() {
+            const main = document.getElementById('main');
+            const res = await fetch('assets/manifest.json');
+            if (!res.ok) { main.textContent = 'Failed to load manifest.'; return; }
+            const m = await res.json();
+            main.innerHTML = '';
+
+            // ---- Player ----
+            main.appendChild(section(
+                'Player',
+                `Spritesheet at <code>${m.player.spritesheet}</code> — ${m.player.animations.walk.length} walk frames + stand/jump/hurt/duck. Full poses also available as standalone PNGs.`
+            ));
+            {
+                const grid = makeGrid();
+                grid.appendChild(spriteCard('spritesheet', m.player.spritesheet, 'player'));
+                for (const [k, p] of Object.entries(m.player.poses)) {
+                    grid.appendChild(spriteCard('poses.' + k, p, 'player'));
+                }
+                main.appendChild(grid);
+            }
+
+            // ---- Flat image groups ----
+            const groups = [
+                ['tiles',   'tiles',   'Ground blocks and structural pieces. 40×40 each.'],
+                ['items',   'items',   'Collectibles, decorations, hazards, and flags.'],
+                ['enemies', 'enemies', 'Walk cycles (2 frames) and optional dead sprite.'],
+                ['hud',     'hud',     'HUD icons: hearts, coins, keys.'],
+                ['bg',      'bg',      'Full-screen backgrounds. Larger preview.'],
+            ];
+            for (const [key, groupKey, sub] of groups) {
+                main.appendChild(section(key[0].toUpperCase() + key.slice(1), sub));
+                const grid = makeGrid();
+                const group = m[key];
+                if (key === 'enemies') {
+                    for (const [name, frames] of Object.entries(group)) {
+                        (frames.walk || []).forEach((p, i) =>
+                            grid.appendChild(spriteCard(`${name}.walk[${i}]`, p, 'enemies')));
+                        if (frames.dead) grid.appendChild(spriteCard(`${name}.dead`, frames.dead, 'enemies'));
+                    }
+                } else {
+                    for (const [k, p] of Object.entries(group)) {
+                        grid.appendChild(spriteCard(k, p, groupKey));
+                    }
+                }
+                main.appendChild(grid);
+            }
+
+            // ---- Sounds ----
+            main.appendChild(section('SFX', 'Short one-shot sounds. Call with <code>play(\'sfx_&lt;key&gt;\')</code> in demo.html.'));
+            {
+                const row = makeAudioRow();
+                for (const [k, p] of Object.entries(m.sfx)) row.appendChild(audioCard(k, p, 'sfx'));
+                main.appendChild(row);
+            }
+
+            main.appendChild(section('Music', 'Looping background tracks. Loaded with <code>loop: true</code>.'));
+            {
+                const row = makeAudioRow();
+                for (const [k, p] of Object.entries(m.music)) row.appendChild(audioCard(k, p, 'music'));
+                main.appendChild(row);
+            }
+
+            // ---- Footer ----
+            const foot = document.createElement('p');
+            foot.className = 'sub';
+            foot.style.marginTop = '32px';
+            foot.innerHTML = 'Attribution: see <a href="assets/CREDITS.md">assets/CREDITS.md</a>. Full untouched pack: <code>/static/</code>.';
+            main.appendChild(foot);
+        }
+
+        boot().catch(err => {
+            document.getElementById('main').innerHTML =
+                '<p style="color:#f88;">Error: ' + err.message + '</p>';
+        });
+    </script>
+</body>
+</html>

@@ -35,68 +35,44 @@
             height: auto;
         }
 
-        #mobileControls {
-            display: none;
-            width: 100%;
-            max-width: 800px;
-            padding: 10px;
-            justify-content: space-between;
-            touch-action: none;
-        }
-
-        .control-btn {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            border: 3px solid #228B22;
-            background: rgba(255, 255, 255, 0.8);
-            font-size: 28px;
-            font-weight: bold;
-            color: #228B22;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            touch-action: none;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        .control-btn:active, .control-btn.pressed {
-            background: #228B22;
-            color: white;
-        }
-
-        #dpad {
-            display: flex;
-            gap: 10px;
-        }
-
-        #jumpBtn {
-            width: 90px;
-            height: 90px;
-            font-size: 16px;
-        }
-
-        @media (pointer: coarse), (max-width: 850px) {
-            #mobileControls {
-                display: flex;
-            }
-        }
     </style>
 </head>
 <body>
     <div id="gameContainer">
         <canvas id="gameCanvas" width="800" height="600"></canvas>
-        <div id="mobileControls">
-            <div id="dpad">
-                <button class="control-btn" id="leftBtn">&#9664;</button>
-                <button class="control-btn" id="rightBtn">&#9654;</button>
-            </div>
-            <button class="control-btn" id="jumpBtn">JUMP</button>
+        <div style="margin-top:8px;font-size:12px;color:#555;">
+            <a href="demo.html" style="color:#228B22;">sprite demo</a>
+            &middot;
+            <a href="gallery.html" style="color:#228B22;">asset gallery</a>
         </div>
     </div>
 
     <script>
+        // ============================================
+        // ERROR OVERLAY
+        // ============================================
+        // Surfaces uncaught JS errors visibly so you don't need DevTools open.
+        // If your game suddenly stops, look here for what broke and where.
+        (function () {
+            const overlay = document.createElement('div');
+            overlay.style.cssText =
+                'position:fixed;top:0;left:0;right:0;background:rgba(180,30,30,0.92);' +
+                'color:#fff;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;' +
+                'padding:8px 12px;white-space:pre-wrap;z-index:9999;display:none;' +
+                'max-height:40vh;overflow:auto;';
+            document.body.appendChild(overlay);
+            function show(msg) {
+                overlay.style.display = 'block';
+                overlay.textContent += msg + '\n';
+            }
+            window.addEventListener('error', e => show(
+                `Error: ${e.message}\n  at ${e.filename || '?'}:${e.lineno || '?'}:${e.colno || '?'}`
+            ));
+            window.addEventListener('unhandledrejection', e => show(
+                `Unhandled promise rejection: ${e.reason}`
+            ));
+        })();
+
         // ============================================
         // INPUT HANDLING
         // ============================================
@@ -142,46 +118,6 @@
                     break;
             }
         });
-
-        // ============================================
-        // MOBILE TOUCH CONTROLS
-        // ============================================
-        function setupMobileControls() {
-            const leftBtn = document.getElementById('leftBtn');
-            const rightBtn = document.getElementById('rightBtn');
-            const jumpBtn = document.getElementById('jumpBtn');
-
-            function addTouchControl(button, key) {
-                button.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    keys[key] = true;
-                    button.classList.add('pressed');
-                }, { passive: false });
-
-                button.addEventListener('touchend', (e) => {
-                    e.preventDefault();
-                    keys[key] = false;
-                    button.classList.remove('pressed');
-                }, { passive: false });
-
-                button.addEventListener('touchcancel', (e) => {
-                    keys[key] = false;
-                    button.classList.remove('pressed');
-                });
-            }
-
-            addTouchControl(leftBtn, 'left');
-            addTouchControl(rightBtn, 'right');
-            addTouchControl(jumpBtn, 'up');
-
-            document.body.addEventListener('touchstart', (e) => {
-                if (e.target.classList.contains('control-btn')) {
-                    e.preventDefault();
-                }
-            }, { passive: false });
-        }
-
-        document.addEventListener('DOMContentLoaded', setupMobileControls);
 
         // ============================================
         // PLATFORM CLASS
