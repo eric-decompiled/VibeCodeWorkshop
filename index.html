@@ -107,6 +107,19 @@
         window.addEventListener('keydown', startMusic, { once: true });
 
         // ============================================
+        // SWORDS
+        // ============================================
+        const SWORDS = [
+            { id: 'iron',    name: 'Iron Sword',    cost: 0,   blade: '#C0C0C0', guard: '#DAA520', reach: 44, length: 36 },
+            { id: 'fire',    name: 'Fire Sword',    cost: 10,  blade: '#FF4500', guard: '#FF8C00', reach: 54, length: 42 },
+            { id: 'ice',     name: 'Ice Sword',     cost: 15,  blade: '#00CFFF', guard: '#007ACC', reach: 50, length: 40 },
+            { id: 'golden',  name: 'Golden Sword',  cost: 25,  blade: '#FFD700', guard: '#FFA500', reach: 48, length: 38 },
+            { id: 'giant',   name: 'Giant Sword',   cost: 40,  blade: '#9B59B6', guard: '#6C3483', reach: 70, length: 56 },
+        ];
+        let equippedSword = SWORDS[0];
+        const ownedSwords = new Set(['iron']);
+
+        // ============================================
         // WORLD
         // ============================================
         let cameraX = 0;
@@ -245,6 +258,12 @@
             const groundCoins = 1 + Math.floor(rng() * 3);
             for (let c = 0; c < groundCoins; c++) {
                 coins.push({ x: startX + 30 + Math.floor(rng() * (groundW - 60)), y: 522, collected: false });
+            }
+
+            // Spawn a shop every 4 ground chunks
+            shopChunkCounter++;
+            if (shopChunkCounter % 4 === 0) {
+                spawnShop(startX + Math.floor(groundW / 2) - 24, 494);
             }
 
             // Gap width then next chunk
@@ -504,6 +523,7 @@
                 ctx.fillRect(x + 11, y + 8, 2, 2);
 
                 // Sword
+                const sw = equippedSword;
                 const swinging = this.attackTimer > 0;
                 const swingProgress = swinging ? 1 - (this.attackTimer / this.ATTACK_DURATION) : 0;
                 const swingAngle = this.facingLeft
@@ -514,16 +534,12 @@
                 ctx.save();
                 ctx.translate(swordX, swordY);
                 ctx.rotate(swingAngle);
-                // Blade
-                ctx.fillStyle = '#C0C0C0';
-                ctx.fillRect(-3, -36, 6, 36);
-                // Tip
-                ctx.fillStyle = '#E8E8E8';
-                ctx.fillRect(-2, -40, 4, 6);
-                // Guard
-                ctx.fillStyle = '#DAA520';
-                ctx.fillRect(-8, -4, 16, 5);
-                // Handle
+                ctx.fillStyle = sw.blade;
+                ctx.fillRect(-3, -sw.length, 6, sw.length);
+                ctx.fillStyle = sw.blade;
+                ctx.fillRect(-2, -sw.length - 5, 4, 7);
+                ctx.fillStyle = sw.guard;
+                ctx.fillRect(-9, -4, 18, 5);
                 ctx.fillStyle = '#8B4513';
                 ctx.fillRect(-2, 0, 4, 12);
                 ctx.restore();
@@ -730,6 +746,133 @@
         }
 
         // ============================================
+        // SHOP
+        // ============================================
+        const shops = [];
+        let shopChunkCounter = 0;
+        let shopOpen = false;
+        let shopSelected = 0;
+
+        class Shop {
+            constructor(x, y) {
+                this.x = x; this.y = y;
+                this.width = 48; this.height = 56;
+            }
+            draw(ctx) {
+                // Stall
+                ctx.fillStyle = '#8B4513';
+                ctx.fillRect(this.x, this.y + 20, this.width, this.height - 20);
+                // Roof
+                ctx.fillStyle = '#E74C3C';
+                ctx.fillRect(this.x - 6, this.y + 12, this.width + 12, 12);
+                // Sign
+                ctx.fillStyle = '#FFD700';
+                ctx.fillRect(this.x + 8, this.y + 28, this.width - 16, 18);
+                ctx.fillStyle = '#333';
+                ctx.font = 'bold 9px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('SHOP', this.x + this.width / 2, this.y + 41);
+                // Prompt if player nearby
+                if (shopOpen) return;
+                ctx.fillStyle = '#fff';
+                ctx.font = '11px monospace';
+                ctx.fillText('[E] enter', this.x + this.width / 2, this.y + 8);
+            }
+        }
+
+        function spawnShop(x, y) { shops.push(new Shop(x, y)); }
+
+        function nearShop(player) {
+            for (const s of shops) {
+                if (Math.abs(player.x - s.x) < 80 && Math.abs(player.y - s.y) < 80) return true;
+            }
+            return false;
+        }
+
+        function drawShopUI(ctx) {
+            if (!shopOpen) return;
+            // Backdrop
+            ctx.fillStyle = 'rgba(0,0,0,0.75)';
+            ctx.fillRect(100, 60, 600, 420);
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(100, 60, 600, 420);
+            // Title
+            ctx.fillStyle = '#FFD700';
+            ctx.font = 'bold 22px "Comic Sans MS", cursive';
+            ctx.textAlign = 'center';
+            ctx.fillText("⚔  Zorp's Sword Shop  ⚔", 400, 100);
+            ctx.fillStyle = '#aaa';
+            ctx.font = '13px monospace';
+            ctx.fillText('↑ ↓ navigate   ENTER buy   E close', 400, 122);
+            // Sword list
+            SWORDS.forEach((sw, i) => {
+                const row = 150 + i * 62;
+                const owned = ownedSwords.has(sw.id);
+                const equipped = equippedSword.id === sw.id;
+                const sel = i === shopSelected;
+                ctx.fillStyle = sel ? 'rgba(255,215,0,0.18)' : 'rgba(255,255,255,0.05)';
+                ctx.fillRect(120, row, 560, 54);
+                if (sel) { ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 2; ctx.strokeRect(120, row, 560, 54); }
+                // Sword colour swatch
+                ctx.fillStyle = sw.blade;
+                ctx.fillRect(138, row + 12, 30, 8);
+                ctx.fillStyle = sw.guard;
+                ctx.fillRect(132, row + 18, 42, 5);
+                // Name + stats
+                ctx.fillStyle = equipped ? '#FFD700' : '#fff';
+                ctx.font = `bold 15px monospace`;
+                ctx.textAlign = 'left';
+                ctx.fillText(sw.name, 190, row + 22);
+                ctx.fillStyle = '#aaa';
+                ctx.font = '12px monospace';
+                ctx.fillText(`reach: ${sw.reach}   length: ${sw.length}`, 190, row + 40);
+                // Status / price
+                ctx.textAlign = 'right';
+                if (equipped) {
+                    ctx.fillStyle = '#27AE60'; ctx.font = 'bold 13px monospace';
+                    ctx.fillText('EQUIPPED', 660, row + 22);
+                } else if (owned) {
+                    ctx.fillStyle = '#3498DB'; ctx.font = 'bold 13px monospace';
+                    ctx.fillText('OWNED — press ENTER to equip', 660, row + 22);
+                } else {
+                    ctx.fillStyle = score >= sw.cost ? '#FFD700' : '#E74C3C';
+                    ctx.font = 'bold 13px monospace';
+                    ctx.fillText(`🪙 ${sw.cost}`, 660, row + 22);
+                }
+            });
+            // Footer
+            ctx.fillStyle = '#FFD700';
+            ctx.font = 'bold 14px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(`Your coins: 🪙 ${score}`, 400, 498);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyE') {
+                if (!shopOpen && nearShop(player)) { shopOpen = true; shopSelected = 0; }
+                else shopOpen = false;
+            }
+            if (!shopOpen) return;
+            if (e.code === 'ArrowUp')   { shopSelected = (shopSelected - 1 + SWORDS.length) % SWORDS.length; e.preventDefault(); }
+            if (e.code === 'ArrowDown') { shopSelected = (shopSelected + 1) % SWORDS.length; e.preventDefault(); }
+            if (e.code === 'Enter') {
+                const sw = SWORDS[shopSelected];
+                if (ownedSwords.has(sw.id)) {
+                    equippedSword = sw;
+                } else if (score >= sw.cost) {
+                    score -= sw.cost;
+                    ownedSwords.add(sw.id);
+                    equippedSword = sw;
+                    play('sfx_levelup');
+                } else {
+                    play('sfx_hurt');
+                }
+                e.preventDefault();
+            }
+        });
+
+        // ============================================
         // GAME LOOP
         // ============================================
         // Seed the first few chunks now that Enemy class is defined
@@ -746,18 +889,18 @@
             ctx.fillStyle = '#1565C0';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            player.update(platforms);
-            cat.update(player, platforms);
-            dog.update(player, platforms);
-            bunny.update(player, platforms);
-            updateFire(player);
+            if (!shopOpen) player.update(platforms);
+            if (!shopOpen) cat.update(player, platforms);
+            if (!shopOpen) dog.update(player, platforms);
+            if (!shopOpen) bunny.update(player, platforms);
+            if (!shopOpen) updateFire(player);
 
             for (const e of enemies) {
                 e.update();
                 // Sword hit: active during first half of swing
                 if (player.attackTimer > player.ATTACK_DURATION / 2) {
-                    const reachX = player.facingLeft ? player.x - 44 : player.x + player.width;
-                    const reachW = 44;
+                    const reachW = equippedSword.reach;
+                    const reachX = player.facingLeft ? player.x - reachW : player.x + player.width;
                     const swordHit = reachX < e.x + e.width && reachX + reachW > e.x
                                   && player.y < e.y + e.height && player.y + player.height > e.y;
                     if (swordHit && !e.dead) { e.dead = true; play('sfx_levelup'); }
@@ -822,6 +965,7 @@
                 ctx.fill();
             }
             for (const e of enemies) e.draw(ctx);
+            for (const s of shops) s.draw(ctx);
             cat.draw(ctx);
             dog.draw(ctx);
             bunny.draw(ctx);
@@ -830,13 +974,19 @@
 
             ctx.restore();
 
+            // Cull far-behind shops
+            for (let i = shops.length - 1; i >= 0; i--)
+                if (shops[i].x < player.x - 900) shops.splice(i, 1);
+
             // Score HUD (screen space)
             ctx.fillStyle = 'rgba(0,0,0,0.45)';
-            ctx.fillRect(10, 10, 120, 32);
+            ctx.fillRect(10, 10, 180, 32);
             ctx.fillStyle = '#FFD700';
             ctx.font = 'bold 18px "Comic Sans MS", cursive';
             ctx.textAlign = 'left';
-            ctx.fillText('🪙 ' + score, 20, 31);
+            ctx.fillText(`🪙 ${score}  ⚔ ${equippedSword.name}`, 20, 31);
+
+            drawShopUI(ctx);
 
             requestAnimationFrame(gameLoop);
         }
