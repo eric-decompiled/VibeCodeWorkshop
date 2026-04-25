@@ -182,6 +182,81 @@
         ];
 
         // ============================================
+        // ENEMY CLASS
+        // ============================================
+        class Enemy {
+            constructor(x, y, patrolWidth = 120) {
+                this.x = x;
+                this.y = y;
+                this.width = 36;
+                this.height = 30;
+                this.vx = 1.5;
+                this.startX = x;
+                this.patrolWidth = patrolWidth;
+                this.tick = 0;
+                this.dead = false;
+                this.deadTimer = 0;
+            }
+
+            update() {
+                if (this.dead) { this.deadTimer++; return; }
+                this.x += this.vx;
+                if (this.x > this.startX + this.patrolWidth) this.vx = -Math.abs(this.vx);
+                if (this.x < this.startX)                    this.vx =  Math.abs(this.vx);
+                this.tick++;
+            }
+
+            draw(ctx) {
+                if (this.dead) {
+                    ctx.fillStyle = '#555';
+                    ctx.fillRect(this.x, this.y + 20, this.width, 10);
+                    return;
+                }
+                // Body
+                ctx.fillStyle = '#E74C3C';
+                ctx.fillRect(this.x, this.y + 8, this.width, this.height - 8);
+                // Head
+                ctx.fillRect(this.x + 6, this.y, 24, 18);
+                // Eyes (angry)
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(this.x + 8,  this.y + 4, 7, 6);
+                ctx.fillRect(this.x + 20, this.y + 4, 7, 6);
+                ctx.fillStyle = '#111';
+                ctx.fillRect(this.x + 10, this.y + 6, 3, 3);
+                ctx.fillRect(this.x + 22, this.y + 6, 3, 3);
+                // Angry brows
+                ctx.fillStyle = '#900';
+                ctx.fillRect(this.x + 7,  this.y + 2, 9, 3);
+                ctx.fillRect(this.x + 19, this.y + 2, 9, 3);
+                // Legs (wiggle)
+                const legOffset = Math.sin(this.tick * 0.2) * 3;
+                ctx.fillStyle = '#C0392B';
+                ctx.fillRect(this.x + 6,  this.y + this.height - 2, 8, 4 + legOffset);
+                ctx.fillRect(this.x + 20, this.y + this.height - 2, 8, 4 - legOffset);
+            }
+
+            collide(player) {
+                if (this.dead) return null;
+                const hit = player.x < this.x + this.width && player.x + player.width > this.x
+                         && player.y < this.y + this.height && player.y + player.height > this.y;
+                if (!hit) return null;
+                if (player.vy > 0 && player.y + player.height < this.y + 16) return 'stomp';
+                return 'hurt';
+            }
+        }
+
+        const enemies = [
+            new Enemy(300,  520, 180),
+            new Enemy(700,  520, 160),
+            new Enemy(900,  390, 140),
+            new Enemy(1100, 310, 140),
+            new Enemy(1500, 230, 160),
+            new Enemy(1700, 410, 120),
+            new Enemy(2000, 520, 200),
+            new Enemy(2200, 270, 150),
+        ];
+
+        // ============================================
         // PLAYER CLASS
         // ============================================
         class Player {
@@ -493,6 +568,19 @@
             dog.update(player, platforms);
             updateFire(player);
 
+            for (const e of enemies) {
+                e.update();
+                const hit = e.collide(player);
+                if (hit === 'stomp') {
+                    e.dead = true;
+                    player.vy = -8;
+                } else if (hit === 'hurt') {
+                    player.x = 100; player.y = 500; player.vy = 0;
+                }
+            }
+            for (let i = enemies.length - 1; i >= 0; i--)
+                if (enemies[i].dead && enemies[i].deadTimer > 60) enemies.splice(i, 1);
+
             cameraX = player.x + player.width / 2 - canvas.width / 2;
             if (cameraX < 0) cameraX = 0;
             if (cameraX > WORLD_WIDTH - canvas.width) cameraX = WORLD_WIDTH - canvas.width;
@@ -503,6 +591,7 @@
             for (const platform of platforms) {
                 platform.draw(ctx);
             }
+            for (const e of enemies) e.draw(ctx);
             cat.draw(ctx);
             dog.draw(ctx);
             drawFire(ctx);
