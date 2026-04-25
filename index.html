@@ -76,7 +76,7 @@
         // ============================================
         // WORLD
         // ============================================
-        const WORLD_WIDTH = 2400;
+        const WORLD_WIDTH = 4000;
         let cameraX = 0;
 
         // ============================================
@@ -164,10 +164,19 @@
 
         // Level platforms
         const platforms = [
-            // Ground — three screens wide
-            new Platform(0,    550, 800, 50),
-            new Platform(800,  550, 800, 50),
-            new Platform(1600, 550, 800, 50),
+            // Ground with holes
+            new Platform(0,    550, 280, 50),
+            new Platform(340,  550, 320, 50),
+            new Platform(730,  550, 260, 50),
+            new Platform(1060, 550, 300, 50),
+            new Platform(1430, 550, 250, 50),
+            new Platform(1750, 550, 290, 50),
+            new Platform(2110, 550, 240, 50),
+            new Platform(2420, 550, 310, 50),
+            new Platform(2800, 550, 260, 50),
+            new Platform(3130, 550, 280, 50),
+            new Platform(3480, 550, 300, 50),
+            new Platform(3840, 550, 160, 50),
             // Screen 1
             new Platform(100,  450, 150, 20),
             new Platform(350,  380, 150, 20),
@@ -185,13 +194,29 @@
             new Platform(2100, 280, 160, 20),
             new Platform(2050, 180, 200, 20),
             new Platform(2300, 400, 160, 20),
+            // Screen 4
+            new Platform(2500, 460, 140, 20),
+            new Platform(2700, 380, 160, 20),
+            new Platform(2850, 300, 140, 20),
+            new Platform(2650, 210, 180, 20),
+            new Platform(2950, 430, 120, 20),
+            new Platform(3050, 320, 150, 20),
+            new Platform(3100, 200, 160, 20),
+            // Screen 5
+            new Platform(3280, 470, 130, 20),
+            new Platform(3420, 390, 150, 20),
+            new Platform(3600, 310, 140, 20),
+            new Platform(3500, 210, 180, 20),
+            new Platform(3750, 440, 130, 20),
+            new Platform(3820, 340, 140, 20),
+            new Platform(3900, 250, 100, 20),
         ];
 
         // ============================================
         // ENEMY CLASS
         // ============================================
         class Enemy {
-            constructor(x, y, patrolWidth = 120) {
+            constructor(x, y, patrolWidth = 120, color = '#E74C3C') {
                 this.x = x;
                 this.y = y;
                 this.width = 36;
@@ -202,6 +227,8 @@
                 this.tick = 0;
                 this.dead = false;
                 this.deadTimer = 0;
+                this.color = color;
+                this.colorDark = color === '#F1C40F' ? '#B7950B' : '#C0392B';
             }
 
             update() {
@@ -219,7 +246,7 @@
                     return;
                 }
                 // Body
-                ctx.fillStyle = '#E74C3C';
+                ctx.fillStyle = this.color;
                 ctx.fillRect(this.x, this.y + 8, this.width, this.height - 8);
                 // Head
                 ctx.fillRect(this.x + 6, this.y, 24, 18);
@@ -231,12 +258,12 @@
                 ctx.fillRect(this.x + 10, this.y + 6, 3, 3);
                 ctx.fillRect(this.x + 22, this.y + 6, 3, 3);
                 // Angry brows
-                ctx.fillStyle = '#900';
+                ctx.fillStyle = this.colorDark;
                 ctx.fillRect(this.x + 7,  this.y + 2, 9, 3);
                 ctx.fillRect(this.x + 19, this.y + 2, 9, 3);
                 // Legs (wiggle)
                 const legOffset = Math.sin(this.tick * 0.2) * 3;
-                ctx.fillStyle = '#C0392B';
+                ctx.fillStyle = this.colorDark;
                 ctx.fillRect(this.x + 6,  this.y + this.height - 2, 8, 4 + legOffset);
                 ctx.fillRect(this.x + 20, this.y + this.height - 2, 8, 4 - legOffset);
             }
@@ -260,6 +287,16 @@
             new Enemy(1700, 410, 120),
             new Enemy(2000, 520, 200),
             new Enemy(2200, 270, 150),
+            // Screen 4 & 5 red enemies
+            new Enemy(2500, 520, 160),
+            new Enemy(2850, 270, 120),
+            new Enemy(3050, 290, 130),
+            new Enemy(3400, 520, 200),
+            new Enemy(3750, 410, 120),
+            // Three yellow enemies
+            new Enemy(2700, 350, 140, '#F1C40F'),
+            new Enemy(3200, 520, 180, '#F1C40F'),
+            new Enemy(3820, 310, 120, '#F1C40F'),
         ];
 
         // ============================================
