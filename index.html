@@ -175,6 +175,8 @@
                 this.JUMP_FORCE = -12;
                 this.GRAVITY = 0.5;
                 this.isOnGround = false;
+                this.timer = 0;
+                this.DESTRUCT_TIME = 30 * 60; // 30 seconds at 60fps
             }
 
             update(platforms) {
@@ -214,10 +216,21 @@
                     this.y = 500;
                     this.vy = 0;
                 }
+
+                this.timer++;
+                if (this.timer >= this.DESTRUCT_TIME) {
+                    this.x = 100;
+                    this.y = 500;
+                    this.vx = 0;
+                    this.vy = 0;
+                    this.timer = 0;
+                }
             }
 
             draw(ctx) {
-                ctx.fillStyle = '#9B59B6';
+                const warning = this.timer > this.DESTRUCT_TIME - 5 * 60;
+                const flash = warning && Math.floor(this.timer / 10) % 2 === 0;
+                ctx.fillStyle = flash ? '#FF0000' : '#9B59B6';
                 ctx.fillRect(this.x, this.y, this.width, this.height);
 
                 ctx.fillStyle = '#fff';
