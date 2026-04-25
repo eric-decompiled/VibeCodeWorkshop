@@ -359,12 +359,83 @@
         }
 
         // ============================================
+        // DOG CLASS
+        // ============================================
+        class Dog {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 28;
+                this.height = 20;
+                this.SPEED = 3;
+                this.facingLeft = false;
+                this.tailWag = 0;
+            }
+
+            update(player, platforms) {
+                const targetX = player.x + player.width / 2 - this.width / 2 + 44;
+                const targetY = player.y + player.height - this.height;
+                const dx = targetX - this.x;
+                const dy = targetY - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist > 50) {
+                    this.x += (dx / dist) * this.SPEED;
+                    this.y += (dy / dist) * this.SPEED;
+                    this.facingLeft = dx < 0;
+                }
+
+                this.tailWag += 0.2;
+                if (this.x < 0) this.x = 0;
+                if (this.x + this.width > WORLD_WIDTH) this.x = WORLD_WIDTH - this.width;
+            }
+
+            draw(ctx) {
+                const x = this.x, y = this.y;
+                ctx.fillStyle = '#C68642';
+                // Body
+                ctx.fillRect(x, y + 6, this.width, this.height - 6);
+                // Head
+                ctx.fillRect(x + (this.facingLeft ? 0 : 8), y, 18, 16);
+                // Floppy ears
+                ctx.fillStyle = '#A0522D';
+                if (this.facingLeft) {
+                    ctx.fillRect(x + 14, y + 2, 6, 10);
+                } else {
+                    ctx.fillRect(x + 8, y + 2, 6, 10);
+                }
+                // Nose
+                ctx.fillStyle = '#333';
+                ctx.fillRect(this.facingLeft ? x + 1 : x + 22, y + 7, 4, 3);
+                // Eye
+                ctx.fillStyle = '#222';
+                ctx.fillRect(this.facingLeft ? x + 8 : x + 14, y + 3, 3, 3);
+                // Wagging tail
+                const wag = Math.sin(this.tailWag) * 8;
+                ctx.beginPath();
+                ctx.moveTo(this.facingLeft ? x + this.width : x, y + 8);
+                ctx.quadraticCurveTo(
+                    this.facingLeft ? x + this.width + 10 : x - 10, y + wag,
+                    this.facingLeft ? x + this.width + 6 : x - 6, y - 4 + wag
+                );
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#C68642';
+                ctx.stroke();
+                // Legs
+                ctx.fillStyle = '#C68642';
+                ctx.fillRect(x + 4,  y + this.height - 4, 5, 4);
+                ctx.fillRect(x + 18, y + this.height - 4, 5, 4);
+            }
+        }
+
+        // ============================================
         // GAME LOOP
         // ============================================
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const player = new Player(100, 500);
         const cat = new Cat(60, 500);
+        const dog = new Dog(150, 500);
 
         function gameLoop() {
             ctx.fillStyle = '#1565C0';
@@ -372,6 +443,7 @@
 
             player.update(platforms);
             cat.update(player, platforms);
+            dog.update(player, platforms);
 
             cameraX = player.x + player.width / 2 - canvas.width / 2;
             if (cameraX < 0) cameraX = 0;
@@ -384,6 +456,7 @@
                 platform.draw(ctx);
             }
             cat.draw(ctx);
+            dog.draw(ctx);
             player.draw(ctx);
 
             ctx.restore();
