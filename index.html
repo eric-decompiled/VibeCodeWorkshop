@@ -251,16 +251,31 @@
             draw(ctx) {
                 const warning = this.timer > this.DESTRUCT_TIME - 5 * 60;
                 const flash = warning && Math.floor(this.timer / 10) % 2 === 0;
-                ctx.fillStyle = flash ? '#FF0000' : '#9B59B6';
+                ctx.fillStyle = flash ? '#FF0000' : '#27AE60';
                 ctx.fillRect(this.x, this.y, this.width, this.height);
 
-                ctx.fillStyle = '#fff';
-                ctx.fillRect(this.x + 8, this.y + 12, 6, 6);
-                ctx.fillRect(this.x + 18, this.y + 12, 6, 6);
+                // Tall silly top hat
+                ctx.fillStyle = '#8E44AD';
+                ctx.fillRect(this.x + 4, this.y - 22, 24, 22);  // crown
+                ctx.fillRect(this.x - 2, this.y - 4, 36, 5);    // brim
+                // Hat band
+                ctx.fillStyle = '#F1C40F';
+                ctx.fillRect(this.x + 4, this.y - 8, 24, 4);
+                // Flower on band
+                ctx.fillStyle = '#E74C3C';
+                ctx.fillRect(this.x + 20, this.y - 9, 5, 5);
+                ctx.fillStyle = '#F9E79F';
+                ctx.fillRect(this.x + 21, this.y - 8, 3, 3);
 
-                ctx.fillStyle = '#333';
-                ctx.fillRect(this.x + 10, this.y + 14, 2, 2);
-                ctx.fillRect(this.x + 20, this.y + 14, 2, 2);
+                // Sunglasses frame
+                ctx.fillStyle = '#111';
+                ctx.fillRect(this.x + 5, this.y + 12, 9, 7);
+                ctx.fillRect(this.x + 17, this.y + 12, 9, 7);
+                ctx.fillRect(this.x + 14, this.y + 13, 3, 2); // bridge
+                // Lenses
+                ctx.fillStyle = '#1ABC9C';
+                ctx.fillRect(this.x + 6, this.y + 13, 7, 5);
+                ctx.fillRect(this.x + 18, this.y + 13, 7, 5);
             }
         }
 
