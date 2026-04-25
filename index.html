@@ -254,6 +254,15 @@
                 ctx.fillStyle = flash ? '#FF0000' : '#27AE60';
                 ctx.fillRect(this.x, this.y, this.width, this.height);
 
+                // Name tag
+                ctx.font = 'bold 13px "Comic Sans MS", cursive';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#FFD700';
+                ctx.fillText('Zorp', this.x + this.width / 2, this.y - 28);
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 0.5;
+                ctx.strokeText('Zorp', this.x + this.width / 2, this.y - 28);
+
                 // Tall silly top hat
                 ctx.fillStyle = '#8E44AD';
                 ctx.fillRect(this.x + 4, this.y - 22, 24, 22);  // crown
