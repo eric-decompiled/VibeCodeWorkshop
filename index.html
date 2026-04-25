@@ -74,9 +74,40 @@
         })();
 
         // ============================================
+        // SOUND
+        // ============================================
+        const SND = {};
+        function loadAudio(key, src, loop = false) {
+            const a = new Audio(src);
+            a.loop = loop;
+            SND[key] = a;
+        }
+        loadAudio('sfx_jump',    'assets/sfx/jump.ogg');
+        loadAudio('sfx_pickup',  'assets/sfx/pickup.ogg');
+        loadAudio('sfx_levelup', 'assets/sfx/levelup.ogg');
+        loadAudio('sfx_hurt',    'assets/sfx/key.ogg');
+        loadAudio('music',       'assets/music/retro.mp3', true);
+
+        function play(key) {
+            const s = SND[key];
+            if (!s) return;
+            s.currentTime = 0;
+            s.play().catch(() => {});
+        }
+
+        // Start music on first interaction
+        let musicStarted = false;
+        function startMusic() {
+            if (musicStarted) return;
+            musicStarted = true;
+            SND['music'].volume = 0.4;
+            SND['music'].play().catch(() => {});
+        }
+        window.addEventListener('keydown', startMusic, { once: true });
+
+        // ============================================
         // WORLD
         // ============================================
-        const WORLD_WIDTH = 4000;
         let cameraX = 0;
 
         // ============================================
@@ -162,55 +193,51 @@
             }
         }
 
-        // Level platforms
-        const platforms = [
-            // Ground with holes
-            new Platform(0,    550, 280, 50),
-            new Platform(340,  550, 320, 50),
-            new Platform(730,  550, 260, 50),
-            new Platform(1060, 550, 300, 50),
-            new Platform(1430, 550, 250, 50),
-            new Platform(1750, 550, 290, 50),
-            new Platform(2110, 550, 240, 50),
-            new Platform(2420, 550, 310, 50),
-            new Platform(2800, 550, 260, 50),
-            new Platform(3130, 550, 280, 50),
-            new Platform(3480, 550, 300, 50),
-            new Platform(3840, 550, 160, 50),
-            // Screen 1
-            new Platform(100,  450, 150, 20),
-            new Platform(350,  380, 150, 20),
-            new Platform(550,  300, 150, 20),
-            new Platform(200,  220, 150, 20),
-            new Platform(450,  150, 200, 20),
-            // Screen 2
-            new Platform(900,  420, 160, 20),
-            new Platform(1100, 340, 160, 20),
-            new Platform(1300, 260, 160, 20),
-            new Platform(1050, 180, 200, 20),
-            // Screen 3
-            new Platform(1700, 440, 160, 20),
-            new Platform(1900, 360, 160, 20),
-            new Platform(2100, 280, 160, 20),
-            new Platform(2050, 180, 200, 20),
-            new Platform(2300, 400, 160, 20),
-            // Screen 4
-            new Platform(2500, 460, 140, 20),
-            new Platform(2700, 380, 160, 20),
-            new Platform(2850, 300, 140, 20),
-            new Platform(2650, 210, 180, 20),
-            new Platform(2950, 430, 120, 20),
-            new Platform(3050, 320, 150, 20),
-            new Platform(3100, 200, 160, 20),
-            // Screen 5
-            new Platform(3280, 470, 130, 20),
-            new Platform(3420, 390, 150, 20),
-            new Platform(3600, 310, 140, 20),
-            new Platform(3500, 210, 180, 20),
-            new Platform(3750, 440, 130, 20),
-            new Platform(3820, 340, 140, 20),
-            new Platform(3900, 250, 100, 20),
-        ];
+        // ============================================
+        // PROCEDURAL LEVEL GENERATOR
+        // ============================================
+        const platforms = [];
+        const enemies = [];
+        let genX = 0;   // how far right we've generated
+        let rngSeed = 1;
+
+        function rng() {
+            rngSeed = (rngSeed * 1664525 + 1013904223) & 0xffffffff;
+            return (rngSeed >>> 0) / 0xffffffff;
+        }
+
+        function generateChunk(startX) {
+            // Ground segment with gap after
+            const groundW = 220 + Math.floor(rng() * 180);
+            platforms.push(new Platform(startX, 550, groundW, 50));
+
+            // 1–3 floating platforms above this ground chunk
+            const floatCount = 1 + Math.floor(rng() * 3);
+            for (let i = 0; i < floatCount; i++) {
+                const fw = 100 + Math.floor(rng() * 120);
+                const fx = startX + Math.floor(rng() * Math.max(10, groundW - fw));
+                const fy = 160 + Math.floor(rng() * 340);
+                platforms.push(new Platform(fx, fy, fw, 20));
+
+                // Sometimes put an enemy on a floating platform
+                if (rng() < 0.5) {
+                    const color = rng() < 0.3 ? '#F1C40F' : '#E74C3C';
+                    enemies.push(new Enemy(fx + 10, fy - 30, Math.min(fw - 20, 80 + Math.floor(rng() * 60)), color));
+                }
+            }
+
+            // Ground enemy
+            if (rng() < 0.6) {
+                const color = rng() < 0.25 ? '#F1C40F' : '#E74C3C';
+                enemies.push(new Enemy(startX + 20, 520, groundW - 40, color));
+            }
+
+            // Gap width then next chunk
+            const gap = 40 + Math.floor(rng() * 80);
+            return startX + groundW + gap;
+        }
+
+        // Seed call moved to after Enemy/Player classes are defined
 
         // ============================================
         // ENEMY CLASS
@@ -278,26 +305,6 @@
             }
         }
 
-        const enemies = [
-            new Enemy(300,  520, 180),
-            new Enemy(700,  520, 160),
-            new Enemy(900,  390, 140),
-            new Enemy(1100, 310, 140),
-            new Enemy(1500, 230, 160),
-            new Enemy(1700, 410, 120),
-            new Enemy(2000, 520, 200),
-            new Enemy(2200, 270, 150),
-            // Screen 4 & 5 red enemies
-            new Enemy(2500, 520, 160),
-            new Enemy(2850, 270, 120),
-            new Enemy(3050, 290, 130),
-            new Enemy(3400, 520, 200),
-            new Enemy(3750, 410, 120),
-            // Three yellow enemies
-            new Enemy(2700, 350, 140, '#F1C40F'),
-            new Enemy(3200, 520, 180, '#F1C40F'),
-            new Enemy(3820, 310, 120, '#F1C40F'),
-        ];
 
         // ============================================
         // PLAYER CLASS
@@ -328,6 +335,7 @@
 
                 if (keys.up && this.isOnGround) {
                     this.vy = this.JUMP_FORCE;
+                    play('sfx_jump');
                     this.isOnGround = false;
                 }
 
@@ -335,7 +343,7 @@
                 this.x += this.vx;
 
                 if (this.x < 0) this.x = 0;
-                if (this.x + this.width > WORLD_WIDTH) this.x = WORLD_WIDTH - this.width;
+                // no right-edge clamp — level is infinite
 
                 this.y += this.vy;
                 this.isOnGround = false;
@@ -440,7 +448,7 @@
 
                 // Clamp to world
                 if (this.x < 0) this.x = 0;
-                if (this.x + this.width > WORLD_WIDTH) this.x = WORLD_WIDTH - this.width;
+                // no right-edge clamp — level is infinite
             }
 
             draw(ctx) {
@@ -603,7 +611,7 @@
 
                 if (this.y > 600) { this.y = 500; this.vy = 0; }
                 if (this.x < 0) this.x = 0;
-                if (this.x + this.width > WORLD_WIDTH) this.x = WORLD_WIDTH - this.width;
+                // no right-edge clamp — level is infinite
             }
 
             draw(ctx) {
@@ -665,7 +673,7 @@
 
                 this.tailWag += 0.2;
                 if (this.x < 0) this.x = 0;
-                if (this.x + this.width > WORLD_WIDTH) this.x = WORLD_WIDTH - this.width;
+                // no right-edge clamp — level is infinite
             }
 
             draw(ctx) {
@@ -709,6 +717,9 @@
         // ============================================
         // GAME LOOP
         // ============================================
+        // Seed the first few chunks now that Enemy class is defined
+        while (genX < 2400) genX = generateChunk(genX);
+
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const player = new Player(100, 500);
@@ -734,22 +745,34 @@
                     const reachW = 44;
                     const swordHit = reachX < e.x + e.width && reachX + reachW > e.x
                                   && player.y < e.y + e.height && player.y + player.height > e.y;
-                    if (swordHit && !e.dead) { e.dead = true; }
+                    if (swordHit && !e.dead) { e.dead = true; play('sfx_levelup'); }
                 }
                 const hit = e.collide(player);
                 if (hit === 'stomp') {
                     e.dead = true;
                     player.vy = -8;
+                    play('sfx_pickup');
                 } else if (hit === 'hurt') {
                     player.x = 100; player.y = 500; player.vy = 0;
+                    play('sfx_hurt');
                 }
             }
             for (let i = enemies.length - 1; i >= 0; i--)
                 if (enemies[i].dead && enemies[i].deadTimer > 60) enemies.splice(i, 1);
 
+            // Generate new chunks ahead of player
+            while (genX < player.x + 1600) genX = generateChunk(genX);
+
+            // Cull platforms and enemies far behind player
+            const cullX = player.x - 900;
+            for (let i = platforms.length - 1; i >= 0; i--)
+                if (platforms[i].x + platforms[i].width < cullX) platforms.splice(i, 1);
+            for (let i = enemies.length - 1; i >= 0; i--)
+                if (enemies[i].x + enemies[i].width < cullX) enemies.splice(i, 1);
+
             cameraX = player.x + player.width / 2 - canvas.width / 2;
             if (cameraX < 0) cameraX = 0;
-            if (cameraX > WORLD_WIDTH - canvas.width) cameraX = WORLD_WIDTH - canvas.width;
+            // no right-edge camera clamp — level is infinite
 
             ctx.save();
             ctx.translate(-cameraX, 0);
