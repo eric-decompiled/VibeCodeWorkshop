@@ -40,14 +40,10 @@
 <body>
     <div id="gameContainer">
         <canvas id="gameCanvas" width="800" height="600"></canvas>
-        <div style="margin-top:12px;font-size:15px;font-weight:700;color:#000;">
-            <a href="demo.html" style="color:#08400a;text-decoration:underline;">sprite demo</a>
+        <div style="margin-top:8px;font-size:12px;color:#555;">
+            <a href="demo.html" style="color:#228B22;">sprite demo</a>
             &middot;
-            <a href="gallery.html" style="color:#08400a;text-decoration:underline;">asset gallery</a>
-            &middot;
-            <a href="history.html" style="color:#08400a;text-decoration:underline;">version history</a>
-            &middot;
-            <a href="slides/" style="color:#08400a;text-decoration:underline;">slides</a>
+            <a href="gallery.html" style="color:#228B22;">asset gallery</a>
         </div>
     </div>
 
@@ -86,12 +82,12 @@
             a.loop = loop;
             SND[key] = a;
         }
-        loadAudio('sfx_jump',    'assets/sfx/jump.ogg');
-        loadAudio('sfx_coin',    'assets/sfx/coin.ogg');
-        loadAudio('sfx_pickup',  'assets/sfx/pickup.ogg');
-        loadAudio('sfx_levelup', 'assets/sfx/levelup.ogg');
-        loadAudio('sfx_hurt',    'assets/sfx/key.ogg');
-        loadAudio('music',       'assets/music/retro.mp3', true);
+        loadAudio('sfx_jump',    '../assets/sfx/jump.ogg');
+        loadAudio('sfx_coin',    '../assets/sfx/coin.ogg');
+        loadAudio('sfx_pickup',  '../assets/sfx/pickup.ogg');
+        loadAudio('sfx_levelup', '../assets/sfx/levelup.ogg');
+        loadAudio('sfx_hurt',    '../assets/sfx/key.ogg');
+        loadAudio('music',       '../assets/music/retro.mp3', true);
 
         function play(key) {
             const s = SND[key];
@@ -359,6 +355,8 @@
                 this.JUMP_FORCE = -12;
                 this.GRAVITY = 0.5;
                 this.isOnGround = false;
+                this.timer = 0;
+                this.DESTRUCT_TIME = 30 * 60; // 30 seconds at 60fps
                 this.facingLeft = false;
                 this.attackTimer = 0;
                 this.ATTACK_DURATION = 18;
@@ -406,10 +404,20 @@
                 if (keys.attack && this.attackTimer === 0) this.attackTimer = this.ATTACK_DURATION;
                 if (this.attackTimer > 0) this.attackTimer--;
 
+                this.timer++;
+                if (this.timer >= this.DESTRUCT_TIME) {
+                    this.x = 100;
+                    this.y = 500;
+                    this.vx = 0;
+                    this.vy = 0;
+                    this.timer = 0;
+                }
             }
 
             draw(ctx) {
-                ctx.fillStyle = '#27AE60';
+                const warning = this.timer > this.DESTRUCT_TIME - 5 * 60;
+                const flash = warning && Math.floor(this.timer / 10) % 2 === 0;
+                ctx.fillStyle = flash ? '#FF0000' : '#27AE60';
                 ctx.fillRect(this.x, this.y, this.width, this.height);
 
                 // Name tag
@@ -607,9 +615,9 @@
 
                 this.hopTick++;
                 // Hop toward player every 40 frames if far enough away
-                if (this.hopTick >= 22 && Math.abs(dx) > 30 && this.isOnGround) {
-                    this.vx = (dx / Math.abs(dx)) * 8;
-                    this.vy = -11;
+                if (this.hopTick >= 40 && Math.abs(dx) > 30 && this.isOnGround) {
+                    this.vx = (dx / Math.abs(dx)) * 4;
+                    this.vy = -9;
                     this.isOnGround = false;
                     this.hopTick = 0;
                 }
@@ -865,118 +873,6 @@
         });
 
         // ============================================
-        // STORM BACKGROUND
-        // ============================================
-        const storm = {
-            clouds: Array.from({length: 7}, (_, i) => ({
-                x: i * 140, y: 20 + Math.random() * 80,
-                w: 160 + Math.random() * 120, speed: 0.3 + Math.random() * 0.4
-            })),
-            rain: Array.from({length: 120}, () => ({
-                x: Math.random() * 800, y: Math.random() * 600,
-                len: 10 + Math.random() * 14, speed: 12 + Math.random() * 6
-            })),
-            lightning: 0,       // flash brightness 0-1
-            nextFlash: 180,     // frames until next flash
-            bolt: null,         // {x1,y1,segs} drawn during flash
-        };
-
-        function tickStorm() {
-            // Scroll clouds (screen-relative parallax)
-            for (const c of storm.clouds) {
-                c.x -= c.speed;
-                if (c.x + c.w < 0) { c.x = 820; c.y = 20 + Math.random() * 80; }
-            }
-            // Rain
-            for (const r of storm.rain) {
-                r.y += r.speed;
-                r.x -= 2;
-                if (r.y > 620) { r.y = -10; r.x = Math.random() * 820; }
-            }
-            // Lightning
-            if (storm.lightning > 0) {
-                storm.lightning -= 0.06;
-                if (storm.lightning < 0) storm.lightning = 0;
-            }
-            storm.nextFlash--;
-            if (storm.nextFlash <= 0) {
-                storm.lightning = 0.85 + Math.random() * 0.15;
-                storm.nextFlash = 120 + Math.floor(Math.random() * 300);
-                // Build a jagged bolt
-                const bx = 80 + Math.random() * 640;
-                const segs = [];
-                let cx = bx, cy = 0;
-                while (cy < 560) {
-                    const ny = cy + 30 + Math.random() * 40;
-                    const nx = cx + (Math.random() - 0.5) * 60;
-                    segs.push([cx, cy, nx, ny]);
-                    cx = nx; cy = ny;
-                }
-                storm.bolt = { segs };
-            }
-        }
-
-        function drawStorm(ctx) {
-            // Dark gradient sky
-            const sky = ctx.createLinearGradient(0, 0, 0, 600);
-            sky.addColorStop(0, '#0a0a1a');
-            sky.addColorStop(0.5, '#1a0d2e');
-            sky.addColorStop(1, '#0d1a0d');
-            ctx.fillStyle = sky;
-            ctx.fillRect(0, 0, 800, 600);
-
-            // Eerie moon
-            ctx.fillStyle = 'rgba(220,220,180,0.18)';
-            ctx.beginPath(); ctx.arc(680, 70, 48, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = 'rgba(255,255,200,0.55)';
-            ctx.beginPath(); ctx.arc(672, 64, 34, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#0a0a1a';
-            ctx.beginPath(); ctx.arc(660, 58, 28, 0, Math.PI*2); ctx.fill();
-
-            // Clouds
-            for (const c of storm.clouds) {
-                ctx.fillStyle = 'rgba(20,10,30,0.82)';
-                ctx.beginPath();
-                ctx.ellipse(c.x + c.w*0.5, c.y + 30, c.w*0.5, 28, 0, 0, Math.PI*2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.ellipse(c.x + c.w*0.3, c.y + 18, c.w*0.3, 22, 0, 0, Math.PI*2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.ellipse(c.x + c.w*0.72, c.y + 22, c.w*0.28, 20, 0, 0, Math.PI*2);
-                ctx.fill();
-            }
-
-            // Rain streaks
-            ctx.strokeStyle = 'rgba(140,170,255,0.35)';
-            ctx.lineWidth = 1;
-            for (const r of storm.rain) {
-                ctx.beginPath();
-                ctx.moveTo(r.x, r.y);
-                ctx.lineTo(r.x - 3, r.y + r.len);
-                ctx.stroke();
-            }
-
-            // Lightning bolt
-            if (storm.lightning > 0.3 && storm.bolt) {
-                ctx.shadowBlur = 18;
-                ctx.shadowColor = '#aaf';
-                ctx.strokeStyle = `rgba(220,230,255,${storm.lightning})`;
-                ctx.lineWidth = 2;
-                for (const [x1,y1,x2,y2] of storm.bolt.segs) {
-                    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
-                }
-                ctx.shadowBlur = 0;
-            }
-
-            // Flash overlay
-            if (storm.lightning > 0) {
-                ctx.fillStyle = `rgba(200,210,255,${storm.lightning * 0.22})`;
-                ctx.fillRect(0, 0, 800, 600);
-            }
-        }
-
-        // ============================================
         // GAME LOOP
         // ============================================
         // Seed the first few chunks now that Enemy class is defined
@@ -990,8 +886,8 @@
         const bunny = new Bunny(200, 500);
 
         function gameLoop() {
-            tickStorm();
-            drawStorm(ctx);
+            ctx.fillStyle = '#1565C0';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             if (!shopOpen) player.update(platforms);
             if (!shopOpen) cat.update(player, platforms);

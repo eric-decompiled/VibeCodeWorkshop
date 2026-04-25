@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>GameWorkShop — Version History</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #111;
+    color: #eee;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    height: 100vh;
+  }
+  aside {
+    background: #181818;
+    border-right: 1px solid #2a2a2a;
+    overflow-y: auto;
+  }
+  aside h1 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #888;
+    padding: 16px;
+    margin: 0;
+    border-bottom: 1px solid #2a2a2a;
+  }
+  ol { list-style: none; margin: 0; padding: 0; }
+  li button {
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    border-bottom: 1px solid #1f1f1f;
+    color: inherit;
+    padding: 10px 16px;
+    font: inherit;
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 8px;
+    align-items: baseline;
+  }
+  li button:hover { background: #202020; }
+  li button.active { background: #2a3a55; }
+  .num { color: #888; font-variant-numeric: tabular-nums; }
+  .subject { color: #eee; }
+  .meta { grid-column: 2; color: #777; font-size: 12px; }
+  main { display: flex; flex-direction: column; min-width: 0; }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #2a2a2a;
+    background: #181818;
+  }
+  header .title { font-weight: 600; flex: 1; }
+  header .hash { color: #888; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  button.nav {
+    background: #2a2a2a;
+    color: #eee;
+    border: 1px solid #3a3a3a;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font: inherit;
+  }
+  button.nav:hover:not(:disabled) { background: #3a3a3a; }
+  button.nav:disabled { opacity: 0.4; cursor: not-allowed; }
+  iframe {
+    flex: 1;
+    width: 100%;
+    border: 0;
+    background: #000;
+  }
+</style>
+</head>
+<body>
+<aside>
+  <h1>Version History</h1>
+  <ol id="list"></ol>
+</aside>
+<main>
+  <header>
+    <button class="nav" id="prev">← Prev</button>
+    <button class="nav" id="next">Next →</button>
+    <span class="title" id="title">Loading…</span>
+    <span class="hash" id="hash"></span>
+  </header>
+  <iframe id="frame" title="game version"></iframe>
+</main>
+
+<script>
+(async () => {
+  const list = document.getElementById('list');
+  const frame = document.getElementById('frame');
+  const titleEl = document.getElementById('title');
+  const hashEl = document.getElementById('hash');
+  const prev = document.getElementById('prev');
+  const next = document.getElementById('next');
+
+  const versions = await fetch('history/manifest.json').then(r => r.json());
+  let current = 0;
+
+  versions.forEach((v, i) => {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.dataset.i = i;
+    const date = new Date(v.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    btn.innerHTML =
+      `<span class="num">v${String(v.n).padStart(2, '0')}</span>` +
+      `<span class="subject">${v.subject}</span>` +
+      `<span class="meta">${v.hash} · ${date}</span>`;
+    btn.addEventListener('click', () => load(i));
+    li.appendChild(btn);
+    list.appendChild(li);
+  });
+
+  function load(i) {
+    current = i;
+    const v = versions[i];
+    frame.src = `history/${v.file}`;
+    titleEl.textContent = `v${String(v.n).padStart(2, '0')} — ${v.subject}`;
+    hashEl.textContent = v.hash;
+    [...list.querySelectorAll('button')].forEach((b, bi) => b.classList.toggle('active', bi === i));
+    prev.disabled = i === 0;
+    next.disabled = i === versions.length - 1;
+    history.replaceState(null, '', `#v${v.n}`);
+  }
+
+  prev.addEventListener('click', () => current > 0 && load(current - 1));
+  next.addEventListener('click', () => current < versions.length - 1 && load(current + 1));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft' && current > 0) load(current - 1);
+    if (e.key === 'ArrowRight' && current < versions.length - 1) load(current + 1);
+  });
+
+  const m = location.hash.match(/^#v(\d+)$/);
+  const start = m ? versions.findIndex(v => v.n === +m[1]) : versions.length - 1;
+  load(start >= 0 ? start : versions.length - 1);
+})();
+</script>
+</body>
+</html>

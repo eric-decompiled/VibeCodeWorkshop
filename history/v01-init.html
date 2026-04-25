@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Platformer Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #87CEEB;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+        }
+
+        #gameContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 100vw;
+        }
+
+        #gameCanvas {
+            background-color: #87CEEB;
+            border: 4px solid #228B22;
+            box-shadow: 0 0 20px rgba(34, 139, 34, 0.3);
+            max-width: 100%;
+            height: auto;
+        }
+
+        #mobileControls {
+            display: none;
+            width: 100%;
+            max-width: 800px;
+            padding: 10px;
+            justify-content: space-between;
+            touch-action: none;
+        }
+
+        .control-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 3px solid #228B22;
+            background: rgba(255, 255, 255, 0.8);
+            font-size: 28px;
+            font-weight: bold;
+            color: #228B22;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .control-btn:active, .control-btn.pressed {
+            background: #228B22;
+            color: white;
+        }
+
+        #dpad {
+            display: flex;
+            gap: 10px;
+        }
+
+        #jumpBtn {
+            width: 90px;
+            height: 90px;
+            font-size: 16px;
+        }
+
+        @media (pointer: coarse), (max-width: 850px) {
+            #mobileControls {
+                display: flex;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="mobileControls">
+            <div id="dpad">
+                <button class="control-btn" id="leftBtn">&#9664;</button>
+                <button class="control-btn" id="rightBtn">&#9654;</button>
+            </div>
+            <button class="control-btn" id="jumpBtn">JUMP</button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // INPUT HANDLING
+        // ============================================
+        const keys = {
+            left: false,
+            right: false,
+            up: false
+        };
+
+        window.addEventListener('keydown', (e) => {
+            switch (e.code) {
+                case 'ArrowLeft':
+                case 'KeyA':
+                    keys.left = true;
+                    break;
+                case 'ArrowRight':
+                case 'KeyD':
+                    keys.right = true;
+                    break;
+                case 'ArrowUp':
+                case 'KeyW':
+                case 'Space':
+                    keys.up = true;
+                    e.preventDefault();
+                    break;
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            switch (e.code) {
+                case 'ArrowLeft':
+                case 'KeyA':
+                    keys.left = false;
+                    break;
+                case 'ArrowRight':
+                case 'KeyD':
+                    keys.right = false;
+                    break;
+                case 'ArrowUp':
+                case 'KeyW':
+                case 'Space':
+                    keys.up = false;
+                    break;
+            }
+        });
+
+        // ============================================
+        // MOBILE TOUCH CONTROLS
+        // ============================================
+        function setupMobileControls() {
+            const leftBtn = document.getElementById('leftBtn');
+            const rightBtn = document.getElementById('rightBtn');
+            const jumpBtn = document.getElementById('jumpBtn');
+
+            function addTouchControl(button, key) {
+                button.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    keys[key] = true;
+                    button.classList.add('pressed');
+                }, { passive: false });
+
+                button.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    keys[key] = false;
+                    button.classList.remove('pressed');
+                }, { passive: false });
+
+                button.addEventListener('touchcancel', (e) => {
+                    keys[key] = false;
+                    button.classList.remove('pressed');
+                });
+            }
+
+            addTouchControl(leftBtn, 'left');
+            addTouchControl(rightBtn, 'right');
+            addTouchControl(jumpBtn, 'up');
+
+            document.body.addEventListener('touchstart', (e) => {
+                if (e.target.classList.contains('control-btn')) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+        }
+
+        document.addEventListener('DOMContentLoaded', setupMobileControls);
+
+        // ============================================
+        // PLATFORM CLASS
+        // ============================================
+        class Platform {
+            constructor(x, y, width, height) {
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+            }
+
+            draw(ctx) {
+                // Brown dirt/earth
+                ctx.fillStyle = '#8B4513';
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+
+                // Green grass top
+                ctx.fillStyle = '#32CD32';
+                ctx.fillRect(this.x, this.y, this.width, 6);
+            }
+
+            checkCollision(player) {
+                return (
+                    player.x < this.x + this.width &&
+                    player.x + player.width > this.x &&
+                    player.y < this.y + this.height &&
+                    player.y + player.height > this.y
+                );
+            }
+        }
+
+        // Level platforms
+        const platforms = [
+            new Platform(0, 550, 800, 50),
+            new Platform(100, 450, 150, 20),
+            new Platform(350, 380, 150, 20),
+            new Platform(550, 300, 150, 20),
+            new Platform(200, 220, 150, 20),
+            new Platform(450, 150, 200, 20),
+        ];
+
+        // ============================================
+        // PLAYER CLASS
+        // ============================================
+        class Player {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 32;
+                this.height = 48;
+                this.vx = 0;
+                this.vy = 0;
+                this.SPEED = 5;
+                this.JUMP_FORCE = -12;
+                this.GRAVITY = 0.5;
+                this.isOnGround = false;
+            }
+
+            update(platforms) {
+                this.vx = 0;
+                if (keys.left) this.vx = -this.SPEED;
+                if (keys.right) this.vx = this.SPEED;
+
+                if (keys.up && this.isOnGround) {
+                    this.vy = this.JUMP_FORCE;
+                    this.isOnGround = false;
+                }
+
+                this.vy += this.GRAVITY;
+                this.x += this.vx;
+
+                if (this.x < 0) this.x = 0;
+                if (this.x + this.width > 800) this.x = 800 - this.width;
+
+                this.y += this.vy;
+                this.isOnGround = false;
+
+                for (const platform of platforms) {
+                    if (platform.checkCollision(this)) {
+                        if (this.vy > 0) {
+                            this.y = platform.y - this.height;
+                            this.vy = 0;
+                            this.isOnGround = true;
+                        } else if (this.vy < 0) {
+                            this.y = platform.y + platform.height;
+                            this.vy = 0;
+                        }
+                    }
+                }
+
+                if (this.y > 600) {
+                    this.x = 100;
+                    this.y = 500;
+                    this.vy = 0;
+                }
+            }
+
+            draw(ctx) {
+                ctx.fillStyle = '#FF6B35';
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(this.x + 8, this.y + 12, 6, 6);
+                ctx.fillRect(this.x + 18, this.y + 12, 6, 6);
+
+                ctx.fillStyle = '#333';
+                ctx.fillRect(this.x + 10, this.y + 14, 2, 2);
+                ctx.fillRect(this.x + 20, this.y + 14, 2, 2);
+            }
+        }
+
+        // ============================================
+        // GAME LOOP
+        // ============================================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const player = new Player(100, 500);
+
+        function gameLoop() {
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            player.update(platforms);
+
+            for (const platform of platforms) {
+                platform.draw(ctx);
+            }
+
+            player.draw(ctx);
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>

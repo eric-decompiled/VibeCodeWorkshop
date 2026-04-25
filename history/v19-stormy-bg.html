@@ -40,14 +40,10 @@
 <body>
     <div id="gameContainer">
         <canvas id="gameCanvas" width="800" height="600"></canvas>
-        <div style="margin-top:12px;font-size:15px;font-weight:700;color:#000;">
-            <a href="demo.html" style="color:#08400a;text-decoration:underline;">sprite demo</a>
+        <div style="margin-top:8px;font-size:12px;color:#555;">
+            <a href="demo.html" style="color:#228B22;">sprite demo</a>
             &middot;
-            <a href="gallery.html" style="color:#08400a;text-decoration:underline;">asset gallery</a>
-            &middot;
-            <a href="history.html" style="color:#08400a;text-decoration:underline;">version history</a>
-            &middot;
-            <a href="slides/" style="color:#08400a;text-decoration:underline;">slides</a>
+            <a href="gallery.html" style="color:#228B22;">asset gallery</a>
         </div>
     </div>
 
@@ -86,12 +82,12 @@
             a.loop = loop;
             SND[key] = a;
         }
-        loadAudio('sfx_jump',    'assets/sfx/jump.ogg');
-        loadAudio('sfx_coin',    'assets/sfx/coin.ogg');
-        loadAudio('sfx_pickup',  'assets/sfx/pickup.ogg');
-        loadAudio('sfx_levelup', 'assets/sfx/levelup.ogg');
-        loadAudio('sfx_hurt',    'assets/sfx/key.ogg');
-        loadAudio('music',       'assets/music/retro.mp3', true);
+        loadAudio('sfx_jump',    '../assets/sfx/jump.ogg');
+        loadAudio('sfx_coin',    '../assets/sfx/coin.ogg');
+        loadAudio('sfx_pickup',  '../assets/sfx/pickup.ogg');
+        loadAudio('sfx_levelup', '../assets/sfx/levelup.ogg');
+        loadAudio('sfx_hurt',    '../assets/sfx/key.ogg');
+        loadAudio('music',       '../assets/music/retro.mp3', true);
 
         function play(key) {
             const s = SND[key];
