@@ -85,7 +85,8 @@
         const keys = {
             left: false,
             right: false,
-            up: false
+            up: false,
+            attack: false
         };
 
         window.addEventListener('keydown', (e) => {
@@ -100,8 +101,11 @@
                     break;
                 case 'ArrowUp':
                 case 'KeyW':
-                case 'Space':
                     keys.up = true;
+                    e.preventDefault();
+                    break;
+                case 'Space':
+                    keys.attack = true;
                     e.preventDefault();
                     break;
             }
@@ -119,8 +123,10 @@
                     break;
                 case 'ArrowUp':
                 case 'KeyW':
-                case 'Space':
                     keys.up = false;
+                    break;
+                case 'Space':
+                    keys.attack = false;
                     break;
             }
         });
@@ -274,6 +280,8 @@
                 this.timer = 0;
                 this.DESTRUCT_TIME = 30 * 60; // 30 seconds at 60fps
                 this.facingLeft = false;
+                this.attackTimer = 0;
+                this.ATTACK_DURATION = 18;
             }
 
             update(platforms) {
@@ -313,6 +321,9 @@
                     this.y = 500;
                     this.vy = 0;
                 }
+
+                if (keys.attack && this.attackTimer === 0) this.attackTimer = this.ATTACK_DURATION;
+                if (this.attackTimer > 0) this.attackTimer--;
 
                 this.timer++;
                 if (this.timer >= this.DESTRUCT_TIME) {
@@ -431,6 +442,31 @@
                 // Nose
                 ctx.fillStyle = '#FF9999';
                 ctx.fillRect(x + 11, y + 8, 2, 2);
+
+                // Sword
+                const swinging = this.attackTimer > 0;
+                const swingProgress = swinging ? 1 - (this.attackTimer / this.ATTACK_DURATION) : 0;
+                const swingAngle = this.facingLeft
+                    ? Math.PI + swingProgress * 1.4
+                    : -0.3 - swingProgress * 1.4;
+                const swordX = this.facingLeft ? x + 4 : x + this.width - 4;
+                const swordY = y + 24;
+                ctx.save();
+                ctx.translate(swordX, swordY);
+                ctx.rotate(swingAngle);
+                // Blade
+                ctx.fillStyle = '#C0C0C0';
+                ctx.fillRect(-3, -36, 6, 36);
+                // Tip
+                ctx.fillStyle = '#E8E8E8';
+                ctx.fillRect(-2, -40, 4, 6);
+                // Guard
+                ctx.fillStyle = '#DAA520';
+                ctx.fillRect(-8, -4, 16, 5);
+                // Handle
+                ctx.fillStyle = '#8B4513';
+                ctx.fillRect(-2, 0, 4, 12);
+                ctx.restore();
             }
         }
 
@@ -478,6 +514,89 @@
                 ctx.fill();
             }
             ctx.globalAlpha = 1;
+        }
+
+        // ============================================
+        // BUNNY CLASS
+        // ============================================
+        class Bunny {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 20;
+                this.height = 22;
+                this.vx = 0;
+                this.vy = 0;
+                this.GRAVITY = 0.6;
+                this.hopTick = 0;
+                this.facingLeft = false;
+                this.isOnGround = false;
+            }
+
+            update(player, platforms) {
+                const targetX = player.x + player.width / 2 - this.width / 2 - 50;
+                const dx = targetX - this.x;
+
+                this.hopTick++;
+                // Hop toward player every 40 frames if far enough away
+                if (this.hopTick >= 40 && Math.abs(dx) > 30 && this.isOnGround) {
+                    this.vx = (dx / Math.abs(dx)) * 4;
+                    this.vy = -9;
+                    this.isOnGround = false;
+                    this.hopTick = 0;
+                }
+
+                this.facingLeft = dx < 0;
+                this.vy += this.GRAVITY;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vx *= 0.85;
+                this.isOnGround = false;
+
+                for (const p of platforms) {
+                    if (this.x < p.x + p.width && this.x + this.width > p.x &&
+                        this.y < p.y + p.height && this.y + this.height > p.y) {
+                        if (this.vy > 0) {
+                            this.y = p.y - this.height;
+                            this.vy = 0;
+                            this.isOnGround = true;
+                        }
+                    }
+                }
+
+                if (this.y > 600) { this.y = 500; this.vy = 0; }
+                if (this.x < 0) this.x = 0;
+                if (this.x + this.width > WORLD_WIDTH) this.x = WORLD_WIDTH - this.width;
+            }
+
+            draw(ctx) {
+                const x = this.x, y = this.y;
+                const squish = this.isOnGround ? 1 : 0.85;
+                ctx.fillStyle = '#F0F0F0';
+                // Body
+                ctx.fillRect(x, y + 8 * squish, this.width, this.height - 8);
+                // Head
+                ctx.fillRect(x + 2, y + 2, 16, 14);
+                // Tall ears
+                ctx.fillRect(x + 3,  y - 10, 5, 14);
+                ctx.fillRect(x + 12, y - 10, 5, 14);
+                // Inner ears
+                ctx.fillStyle = '#FFB6C1';
+                ctx.fillRect(x + 4,  y - 8, 3, 10);
+                ctx.fillRect(x + 13, y - 8, 3, 10);
+                // Eye
+                ctx.fillStyle = '#FF69B4';
+                ctx.fillRect(x + 5, y + 5, 3, 3);
+                ctx.fillRect(x + 12, y + 5, 3, 3);
+                // Nose
+                ctx.fillStyle = '#FFB6C1';
+                ctx.fillRect(x + 8, y + 9, 4, 3);
+                // Tail
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(this.facingLeft ? x + this.width + 2 : x - 2, y + this.height - 6, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
 
         // ============================================
@@ -558,6 +677,7 @@
         const player = new Player(100, 500);
         const cat = new Cat(60, 500);
         const dog = new Dog(150, 500);
+        const bunny = new Bunny(200, 500);
 
         function gameLoop() {
             ctx.fillStyle = '#1565C0';
@@ -566,10 +686,19 @@
             player.update(platforms);
             cat.update(player, platforms);
             dog.update(player, platforms);
+            bunny.update(player, platforms);
             updateFire(player);
 
             for (const e of enemies) {
                 e.update();
+                // Sword hit: active during first half of swing
+                if (player.attackTimer > player.ATTACK_DURATION / 2) {
+                    const reachX = player.facingLeft ? player.x - 44 : player.x + player.width;
+                    const reachW = 44;
+                    const swordHit = reachX < e.x + e.width && reachX + reachW > e.x
+                                  && player.y < e.y + e.height && player.y + player.height > e.y;
+                    if (swordHit && !e.dead) { e.dead = true; }
+                }
                 const hit = e.collide(player);
                 if (hit === 'stomp') {
                     e.dead = true;
@@ -594,6 +723,7 @@
             for (const e of enemies) e.draw(ctx);
             cat.draw(ctx);
             dog.draw(ctx);
+            bunny.draw(ctx);
             drawFire(ctx);
             player.draw(ctx);
 
