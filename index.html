@@ -83,6 +83,7 @@
             SND[key] = a;
         }
         loadAudio('sfx_jump',    'assets/sfx/jump.ogg');
+        loadAudio('sfx_coin',    'assets/sfx/coin.ogg');
         loadAudio('sfx_pickup',  'assets/sfx/pickup.ogg');
         loadAudio('sfx_levelup', 'assets/sfx/levelup.ogg');
         loadAudio('sfx_hurt',    'assets/sfx/key.ogg');
@@ -198,6 +199,8 @@
         // ============================================
         const platforms = [];
         const enemies = [];
+        const coins = [];
+        let score = 0;
         let genX = 0;   // how far right we've generated
         let rngSeed = 1;
 
@@ -219,6 +222,12 @@
                 const fy = 160 + Math.floor(rng() * 340);
                 platforms.push(new Platform(fx, fy, fw, 20));
 
+                // Coins hovering above the platform
+                const coinCount = 2 + Math.floor(rng() * 4);
+                for (let c = 0; c < coinCount; c++) {
+                    coins.push({ x: fx + 10 + c * 28, y: fy - 28, collected: false });
+                }
+
                 // Sometimes put an enemy on a floating platform
                 if (rng() < 0.5) {
                     const color = rng() < 0.3 ? '#F1C40F' : '#E74C3C';
@@ -230,6 +239,12 @@
             if (rng() < 0.6) {
                 const color = rng() < 0.25 ? '#F1C40F' : '#E74C3C';
                 enemies.push(new Enemy(startX + 20, 520, groundW - 40, color));
+            }
+
+            // A few coins on the ground
+            const groundCoins = 1 + Math.floor(rng() * 3);
+            for (let c = 0; c < groundCoins; c++) {
+                coins.push({ x: startX + 30 + Math.floor(rng() * (groundW - 60)), y: 522, collected: false });
             }
 
             // Gap width then next chunk
@@ -763,12 +778,26 @@
             // Generate new chunks ahead of player
             while (genX < player.x + 1600) genX = generateChunk(genX);
 
-            // Cull platforms and enemies far behind player
+            // Coin collection
+            const cw = 16, ch = 16;
+            for (const c of coins) {
+                if (c.collected) continue;
+                if (player.x < c.x + cw && player.x + player.width > c.x &&
+                    player.y < c.y + ch && player.y + player.height > c.y) {
+                    c.collected = true;
+                    score++;
+                    play('sfx_coin');
+                }
+            }
+
+            // Cull platforms, enemies, and coins far behind player
             const cullX = player.x - 900;
             for (let i = platforms.length - 1; i >= 0; i--)
                 if (platforms[i].x + platforms[i].width < cullX) platforms.splice(i, 1);
             for (let i = enemies.length - 1; i >= 0; i--)
                 if (enemies[i].x + enemies[i].width < cullX) enemies.splice(i, 1);
+            for (let i = coins.length - 1; i >= 0; i--)
+                if (coins[i].x < cullX) coins.splice(i, 1);
 
             cameraX = player.x + player.width / 2 - canvas.width / 2;
             if (cameraX < 0) cameraX = 0;
@@ -780,6 +809,18 @@
             for (const platform of platforms) {
                 platform.draw(ctx);
             }
+            // Draw coins
+            for (const c of coins) {
+                if (c.collected) continue;
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(c.x + 8, c.y + 8, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#FFA500';
+                ctx.beginPath();
+                ctx.arc(c.x + 6, c.y + 6, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
             for (const e of enemies) e.draw(ctx);
             cat.draw(ctx);
             dog.draw(ctx);
@@ -788,6 +829,14 @@
             player.draw(ctx);
 
             ctx.restore();
+
+            // Score HUD (screen space)
+            ctx.fillStyle = 'rgba(0,0,0,0.45)';
+            ctx.fillRect(10, 10, 120, 32);
+            ctx.fillStyle = '#FFD700';
+            ctx.font = 'bold 18px "Comic Sans MS", cursive';
+            ctx.textAlign = 'left';
+            ctx.fillText('🪙 ' + score, 20, 31);
 
             requestAnimationFrame(gameLoop);
         }
